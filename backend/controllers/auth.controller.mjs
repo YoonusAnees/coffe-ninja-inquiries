@@ -1,5 +1,4 @@
-import { success } from "zod";
-import { registerUser, loginUser } from "../services/auth.service.mjs";
+import { registerUser, loginUser, getCurrentUser } from "../services/auth.service.mjs";
 import { authCookiesOptions, buildTokenCookie } from "../utils/jwtToken.mjs";
 import AppError from "../utils/AppError.mjs";
 
@@ -49,3 +48,19 @@ export const logout = async (req, res, next) => {
         message: "User logged out successfully",
     })
 }
+
+export const myProfile = async (req, res, next) => {
+    try {
+        const user = await getCurrentUser(req.user);
+
+        res.set("Cache-Control", "no-store");
+
+        return res.status(200).json({
+            success: true,
+            message: "Profile Fetched",
+            data: { user },
+        });
+    } catch (error) {
+        return next(error);
+    }
+};

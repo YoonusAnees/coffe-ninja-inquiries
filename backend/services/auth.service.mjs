@@ -89,3 +89,13 @@ export const loginUser = async (data) => {
         role: user.role,
     };
 }
+
+export const getCurrentUser = (auth) => {
+    if (!auth) {
+        throw new AppError("Please sign in.", 401);
+    }
+
+    const { id, email, role } = auth;
+
+    return { id, email, role };
+};
