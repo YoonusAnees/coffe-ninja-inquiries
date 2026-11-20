@@ -5,7 +5,7 @@ import { env } from "../config/env.mjs"
 export const signAuthToken = (userId) => {
 
     const payload = { id: userId }
-    jwt.sign(payload, env.JWT_SECRET, {
+    return jwt.sign(payload, env.JWT_SECRET, {
         algorithm: "HS256",
         expiresIn: env.ACCESS_TOKEN_TTL_SECONDS
     })

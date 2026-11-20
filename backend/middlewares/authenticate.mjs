@@ -3,9 +3,7 @@ import { db } from "../config/db/db.mjs"
 import { users } from "../config/db/schema/schema.users.mjs"
 import { AppError } from "../utils/AppError.mjs"
 import { verifyToken } from "../utils/token.mjs"
-import { id } from "zod/v4/locales"
 import { eq } from "drizzle-orm"
-import { use } from "react"
 
 
 const tokenPayLoadSchema = z.object({
@@ -42,7 +40,7 @@ export const verifyUser = async (req, res, next) => {
             .where(eq(users.id, payload.data.id))
             .limit(1);
 
-        if (!user || !use.isActive) {
+        if (!user || !user.isActive) {
             return next(new AppError("Account is Unavailable", 401));
         }
 
