@@ -1,4 +1,4 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query";
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export type AuthUser = {
     id:string;
@@ -13,7 +13,10 @@ type LoginInput = {
 
 type RegisterInput = {
     fullName:string;
+    email:string;
+    password:string;
     phone?:string;
+    
 }
 
 type MessageResponse = {
@@ -30,7 +33,7 @@ type UserResponse = MessageResponse & {
 export const authApi = createApi({
     reducerPath:"authApi",
     baseQuery:fetchBaseQuery({
-        baseUrl:"/api/v1/auth/",
+        baseUrl:"/api/v1/",
         credentials:"same-origin",
     }),
     tagTypes:["CurrentUser"],
@@ -53,7 +56,7 @@ export const authApi = createApi({
         }),
 
         getMe:builder.query<AuthUser,void>({
-            query:()=>"me",
+            query:()=>"profile",
             transformResponse:(response:UserResponse)=>response.data.user,
             providesTags:["CurrentUser"]
         }),
@@ -66,3 +69,10 @@ export const authApi = createApi({
         })
     })
 })
+
+export const {
+  useRegisterMutation,
+  useLoginMutation,
+  useGetMeQuery,
+  useLogoutMutation,
+} = authApi;

@@ -1,13 +1,18 @@
-import './App.css'
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import "./App.css";
+import LoginPage from "./pages/auth/LoginPage";
+import AccountPage from "./pages/auth/AccountPage";
 
 function App() {
-
-
   return (
-    <>
-      <h1 className='text-3xl text-green-800 text-center'>Welcome to Coffe Ninja</h1>
-    </>
-  )
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Navigate to="/account" replace />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/account" element={<AccountPage />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;
