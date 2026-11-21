@@ -71,6 +71,13 @@ export default function LoginPage() {
           {isLoading ? "Signing in......" : "Sign In"}
         </button>
       </form>
+
+      <p>
+        No account?
+        <a href="/register" className="text-blue-600 ml-1">
+          Create an account
+        </a>
+      </p>
     </main>
   );
 }

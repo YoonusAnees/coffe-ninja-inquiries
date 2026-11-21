@@ -48,7 +48,9 @@ export default function AccountPage() {
   return (
     <main className="mx-auto max-w-sm px-6 py-12">
       <h1 className="text-2xl font-semibold">Your Account</h1>
-      <p className="mt-4">{user.email}</p>
+
+      <p className="mt-4">Full Name: {user.fullName}</p>
+      <p className="mt-4">Email: {user.email}</p>
       <p className="mt-4">Role: {user.role}</p>
 
       {logoutError && (

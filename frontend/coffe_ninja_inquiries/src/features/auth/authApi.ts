@@ -1,74 +1,75 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { baseApi } from "../../app/baseApi";
 
 export type AuthUser = {
-    id:string;
-    email:string;
-    role:"CUSTOMER" | "EMPLOYEE" | "ADMIN"
+  id: string;
+  email: string;
+  fullName: string;
+  role: "CUSTOMER" | "EMPLOYEE" | "ADMIN";
 };
 
 type LoginInput = {
-    email:string;
-    password:string
+  email: string;
+  password: string;
 };
 
-type RegisterInput = {
-    fullName:string;
-    email:string;
-    password:string;
-    phone?:string;
-    
-}
+type RegisterInput = LoginInput & {
+  fullName: string;
+  phone?: string;
+};
 
 type MessageResponse = {
-    success:true;
-    message:string;
-}
-
-type UserResponse = MessageResponse & {
-    data:{
-        user:AuthUser
-    };
+  success: true;
+  message: string;
 };
 
-export const authApi = createApi({
-    reducerPath:"authApi",
-    baseQuery:fetchBaseQuery({
-        baseUrl:"/api/v1/",
-        credentials:"same-origin",
+type UserResponse = MessageResponse & {
+  data: {
+    user: AuthUser;
+  };
+};
+
+export const authApi = baseApi.injectEndpoints({
+  endpoints: (builder) => ({
+    register: builder.mutation<UserResponse, RegisterInput>({
+      query: (body) => ({
+        url: "register",
+        method: "POST",
+        body,
+      }),
     }),
-    tagTypes:["CurrentUser"],
-    endpoints:(builder)=>({
-        register:builder.mutation<UserResponse,RegisterInput>({
-            query:(body)=>({
-                url:"register",
-                method:"POST",
-                body
-            }),
-        }),
 
-        login:builder.mutation<UserResponse,LoginInput>({
-            query:(body)=>({
-                url:"login",
-                method:"POST",
-                body
-            }),
-            invalidatesTags:(_result,error)=>(error ? [] : ["CurrentUser"])
-        }),
+    login: builder.mutation<UserResponse, LoginInput>({
+      query: (body) => ({
+        url: "login",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: (_result, error) => (error ? [] : ["CurrentUser"]),
+    }),
 
-        getMe:builder.query<AuthUser,void>({
-            query:()=>"profile",
-            transformResponse:(response:UserResponse)=>response.data.user,
-            providesTags:["CurrentUser"]
-        }),
-        logout:builder.mutation<MessageResponse,void>({
-            query:()=>({
-                url:"logout",
-                method:"POST"
-            }),
-            invalidatesTags:(_result,error)=> (error ? [] : ["CurrentUser"])
-        })
-    })
-})
+    getMe: builder.query<AuthUser, void>({
+      query: () => "profile",
+      transformResponse: (response: UserResponse) => response.data.user,
+      providesTags: ["CurrentUser"],
+    }),
+
+    logout: builder.mutation<MessageResponse, void>({
+      query: () => ({
+        url: "logout",
+        method: "POST",
+      }),
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+        } catch {
+          return;
+        }
+
+        dispatch(baseApi.util.resetApiState());
+      },
+    }),
+  }),
+});
 
 export const {
   useRegisterMutation,
