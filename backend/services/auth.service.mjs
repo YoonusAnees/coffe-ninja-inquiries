@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { db } from "../config/db/db.mjs";
 import { customer } from "../config/db/schema/schema.customers.mjs";
+import { employee } from "../config/db/schema/schema.employees.mjs";
 import { users } from "../config/db/schema/schema.users.mjs";
 import { comparePassword, hashPassword } from "../utils/password.mjs";
 import AppError from "../utils/AppError.mjs";
@@ -70,6 +71,7 @@ export const loginUser = async (data) => {
         isActive: users.isActive,
         passwordHash: users.passwordHash,
     }).from(users)
+
         .where(eq(users.email, email))
         .limit(1);
 
@@ -87,6 +89,7 @@ export const loginUser = async (data) => {
         id: user.id,
         email: user.email,
         role: user.role,
+
     };
 }
 
@@ -95,7 +98,12 @@ export const getCurrentUser = (auth) => {
         throw new AppError("Please sign in.", 401);
     }
 
-    const { id, email, role } = auth;
+    const { id, email, role, fullName } = auth;
 
-    return { id, email, role };
+    return {
+        id,
+        email,
+        role,
+        fullName: fullName ?? "",
+    };
 };
