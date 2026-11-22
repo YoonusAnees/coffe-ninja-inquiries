@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useGetMeQuery, useLogoutMutation } from "../../features/auth/authApi";
 
 export default function AccountPage() {
@@ -67,6 +67,12 @@ export default function AccountPage() {
       >
         {isLoggingOut ? "Signing out..." : "Sign Out"}
       </button>
+
+      {user.role === "CUSTOMER" && (
+        <Link to="/inquiries" className="mt-4 block underline">
+          My Inquiries
+        </Link>
+      )}
     </main>
   );
 }
