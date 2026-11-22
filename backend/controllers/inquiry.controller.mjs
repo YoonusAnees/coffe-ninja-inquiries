@@ -33,7 +33,7 @@ export const getMyInquiries = async (req, res, next) => {
 export const getById = async (req, res, next) => {
     try {
 
-        const inquiry = await getById(req.user.id, req.params.id);
+        const inquiry = await getMyInquryById(req.user.id, req.params.id);
         res.set("Cache-Control", "no-store");
         return res.status(200).json({
             success: true,
