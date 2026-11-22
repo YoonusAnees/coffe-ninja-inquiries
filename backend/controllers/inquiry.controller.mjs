@@ -1,4 +1,4 @@
-import { createInqury } from "../services/inquiry.service.mjs";
+import { createInqury, listMyInquiries, getMyInquryById } from "../services/inquiry.service.mjs";
 
 export const submitInquiry = async (req, res, next) => {
     try {
@@ -11,5 +11,38 @@ export const submitInquiry = async (req, res, next) => {
 
     } catch (error) {
         return next(error)
+    }
+}
+
+
+export const getMyInquiries = async (req, res, next) => {
+    try {
+        const inquiries = await listMyInquiries(req.user.id);
+        res.set("Cache-Control", "no-store");
+        return res.status(200).json({
+            success: true,
+            message: "Inquiries fetched",
+            data: { inquiries },
+        });
+
+    } catch (error) {
+        return next(error)
+    }
+}
+
+export const getById = async (req, res, next) => {
+    try {
+
+        const inquiry = await getById(req.user.id, req.params.id);
+        res.set("Cache-Control", "no-store");
+        return res.status(200).json({
+            success: true,
+            message: "Inquiry details fetched",
+            data: { inquiry }
+        })
+
+
+    } catch (error) {
+        return next(error);
     }
 }
