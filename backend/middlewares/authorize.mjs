@@ -1,4 +1,4 @@
-import { AppError } from "../utils/AppError.mjs";
+import AppError from "../utils/AppError.mjs";
 
 export const rolebasedAccess = (...roles) => {
     return (req, res, next) => {
