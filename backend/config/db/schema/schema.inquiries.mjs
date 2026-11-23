@@ -1,5 +1,6 @@
 import { index, integer, pgEnum, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 import { customer } from "./schema.customers.mjs";
+import { employee } from "./schema.employees.mjs";
 
 export const inquiryStatusEnum = pgEnum("inquiry_status", [
     "NEW",
@@ -26,6 +27,11 @@ export const inquiries = pgTable(
     description: text("description").notNull(),
     status: inquiryStatusEnum("status").default("NEW").notNull(),
     priority: inquiryPriorityEnum("priority").default("NORMAL").notNull(),
+    assignedEmployeeId: uuid("assigned_employee_id").references(
+        () => employee.userId,
+        { onDelete: "restrict" }
+    ),
+    version: integer("version").default(1).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
         .defaultNow()
         .notNull(),
@@ -35,6 +41,10 @@ export const inquiries = pgTable(
         .notNull(),
 },
     (table) => [
-        index("inquiries_customer_created_index").on(table.customerId, table.createdAt)
+        index("inquiries_customer_created_index").on(table.customerId, table.createdAt),
+        index("inquries_employee_created_index").on(
+            table.assignedEmployeeId,
+            table.createdAt
+        )
     ],
 )

@@ -3,6 +3,8 @@ import { db } from "../config/db/db.mjs"
 import { inquiries } from "../config/db/schema/schema.inquiries.mjs";
 import { z } from "zod"
 import AppError from "../utils/AppError.mjs";
+import { customer } from "../config/db/schema/schema.customers.mjs";
+import { employee } from "../config/db/schema/schema.employees.mjs";
 
 const createInquirySchema = z.object({
     subject: z.string().trim().min(1).max(150),
@@ -89,4 +91,24 @@ export const getMyInquryById = async (customerId, dataId) => {
     }
 
     return formatInquiry(inquiry)
+}
+
+export const inquriesAdmin = async () => {
+    const inquiry = await db
+        .select({
+            id: inquiries.id,
+            number: inquiries.number,
+            subject: inquiries.subject,
+            status: inquiries.status,
+            priority: inquiries.priority,
+            customerName: customer.fullName,
+            assignedEmployeeId: inquiries.assignedEmployeeId,
+            assignedEmployeeName: employee.fullName,
+            version: inquiries.version,
+            createdAt: inquiries.createdAt,
+        }).from(inquiries)
+        .innerJoin(customer, eq(customer.userId, inquiries.customerId))
+        .leftJoin(employee, eq(employee.userId, inquiries.assignedEmployeeId))
+        .orderBy(desc(inquiries.createdAt), desc(inquiries.number));
+    return inquiry.map(formatInquiry)
 }

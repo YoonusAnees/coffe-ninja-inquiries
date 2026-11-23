@@ -15,6 +15,13 @@
       "when": 1795308406242,
       "tag": "0001_inquiry-submission",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795440429782,
+      "tag": "0002_admin-assignment",
+      "breakpoints": true
     }
   ]
 }
