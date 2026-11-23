@@ -1,4 +1,4 @@
-import { registerUser, loginUser, getCurrentUser } from "../services/auth.service.mjs";
+import { registerUser, loginUser, getCurrentUser, listAllCustomers, } from "../services/auth.service.mjs";
 import { authCookiesOptions, buildTokenCookie } from "../utils/jwtToken.mjs";
 import AppError from "../utils/AppError.mjs";
 
@@ -64,3 +64,23 @@ export const myProfile = async (req, res, next) => {
         return next(error);
     }
 };
+
+
+export const getAllCustomer = async (req, res, next) => {
+    try {
+
+        const user = await listAllCustomers();
+        res.set("Cache-Control", "no-store");
+
+        return res.status(200).json({
+            success: true,
+            message: "Customers Fetched",
+            data: { user },
+        });
+
+
+    } catch (error) {
+        return next(error)
+    }
+}
+

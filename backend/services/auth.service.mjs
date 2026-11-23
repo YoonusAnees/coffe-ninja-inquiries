@@ -1,11 +1,10 @@
 import { z } from "zod";
 import { db } from "../config/db/db.mjs";
 import { customer } from "../config/db/schema/schema.customers.mjs";
-import { employee } from "../config/db/schema/schema.employees.mjs";
 import { users } from "../config/db/schema/schema.users.mjs";
 import { comparePassword, hashPassword } from "../utils/password.mjs";
 import AppError from "../utils/AppError.mjs";
-import { eq } from "drizzle-orm"
+import { asc, desc, eq } from "drizzle-orm"
 
 const registerSchema = z.object({
     fullName: z.string().trim().min(1).max(150),
@@ -106,4 +105,20 @@ export const getCurrentUser = (auth) => {
         role,
         fullName: fullName ?? "",
     };
+};
+
+export const listAllCustomers = () => {
+    return db
+        .select({
+            id: users.id,
+            fullName: customer.fullName,
+            email: users.email,
+            phone: customer.phone,
+            isActive: users.isActive,
+            createdAt: users.createdAt,
+        })
+        .from(customer)
+        .innerJoin(users, eq(users.id, customer.userId))
+        .where(eq(users.role, "CUSTOMER"))
+        .orderBy(desc(users.createdAt), asc(users.id));
 };
