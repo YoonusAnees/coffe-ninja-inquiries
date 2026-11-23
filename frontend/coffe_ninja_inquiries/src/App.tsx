@@ -6,6 +6,7 @@ import RegisterPage from "./pages/auth/RegisterPage";
 import MyInquiriesPage from "./pages/Inquiry/MyInquiriesPage";
 import NewInquiryPage from "./pages/Inquiry/NewInquiryPage";
 import InquiryDetailsPage from "./pages/Inquiry/InquiryDetailsPage";
+import AdminInquiriesPage from "./pages/Inquiry/AdminInquiriesPage";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/inquiries" element={<MyInquiriesPage />} />
         <Route path="inquiries/new" element={<NewInquiryPage />} />
         <Route path="/inquiries/:id" element={<InquiryDetailsPage />} />
+        <Route path="/admin/inquiries" element={<AdminInquiriesPage />} />
       </Routes>
     </BrowserRouter>
   );

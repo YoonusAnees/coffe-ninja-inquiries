@@ -73,6 +73,12 @@ export default function AccountPage() {
           My Inquiries
         </Link>
       )}
+
+      {user.role === "ADMIN" && (
+        <Link to="/admin/inquiries" className="mt-4 block underline">
+          Manage Inquiries
+        </Link>
+      )}
     </main>
   );
 }
