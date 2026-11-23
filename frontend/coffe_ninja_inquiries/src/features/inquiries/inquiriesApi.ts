@@ -7,8 +7,11 @@ export type InquiryPriority = (typeof inquiryPriorities)[number];
 type AdminInquiry = InquiryDetails & InquiryAssignment;
 
 
-type InquiryStatus =
+export type InquiryStatus =
   | "NEW" | "ASSIGNED" | "IN_PROGRESS" | "WAITING_FOR_CUSTOMER" | "RESOLVED" | "CLOSED";
+
+  
+
 
 
 export type InquiryAssignment = {
@@ -59,11 +62,35 @@ type CreateInquiryInput = {
     description:string;
 }
 
+type AssignedInquiry = InquirySummary & {
+    priority:InquiryPriority;
+}
+
+type AssignedInquiryDetails = AssignedInquiry & {
+    description:string;
+      version: number;
+}
+
+
+
 type ApiResponse<T> = {
     success:true;
     message:string;
     data:T
 }
+
+
+
+export type EmployeeNextStatus =
+  | "IN_PROGRESS"
+  | "WAITING_FOR_CUSTOMER"
+  | "RESOLVED";
+
+type UpdateAssignedStatusInput = {
+  inquiryId: string;
+  status: EmployeeNextStatus;
+  version: number;
+};
 
 
 const inquiryListTag = {type:"Inquiry",id:"LIST"} as const;
@@ -116,6 +143,38 @@ getAssignableEmployees: builder.query<AssignableEmployee[], void>({
     response: ApiResponse<{ employees: AssignableEmployee[] }>,
   ) => response.data.employees,
 }),
+
+getAssignedInquiries:builder.query<AssignedInquiry[],void>({
+    query:()=>"inquiry/assigned",
+    transformResponse:(response:ApiResponse<{inquiries:AssignedInquiry[]}>)=>
+        response.data.inquiries,
+    providesTags:[inquiryListTag],
+}),
+getAssignedInquiry: builder.query<AssignedInquiryDetails, string>({
+  query: (id) => `inquiry/assigned/${encodeURIComponent(id)}`,
+  transformResponse: (
+    response: ApiResponse<{ inquires: AssignedInquiryDetails }>,
+  ) => response.data.inquires,
+  providesTags: (_result, _error, id) => [{ type: "Inquiry", id }],
+}),
+
+updateAssignedStatus: builder.mutation<AssignedInquiryDetails,  UpdateAssignedStatusInput>({
+  query: ({ inquiryId, status, version }) => ({
+    url: `inquiry/assigned/${encodeURIComponent(inquiryId)}/status`,
+    method: "PATCH",
+    body: { status, version },
+  }),
+  transformResponse: (
+    response: ApiResponse<{ inquiry: AssignedInquiryDetails }>,
+  ) => response.data.inquiry,
+  invalidatesTags: (_result, error, { inquiryId }) =>
+    error
+      ? []
+      : [inquiryListTag, { type: "Inquiry", id: inquiryId }],
+}),
+
+
+
   }),
 });
 
@@ -125,6 +184,11 @@ export const {
   useCreateInquiryMutation,
   useAssignInquiryMutation,
   useGetAdminInquiriesQuery,
-  useGetAssignableEmployeesQuery
+  useGetAssignableEmployeesQuery,
+  useGetAssignedInquiriesQuery,
+  useGetAssignedInquiryQuery,
+  useUpdateAssignedStatusMutation
+
+  
   
 } = inquiriesApi;
