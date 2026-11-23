@@ -22,6 +22,17 @@ const assignInquirySchema = z.object({
 
 const inquiryIdSchema = z.string().uuid();
 
+const employeeStatusSchema = z.object({
+    status: z.enum(["IN_PROGRESS", "WAITING_FOR_CUSTOMER", "RESOLVED"]),
+    version: z.number().int().positive(),
+}).strict();
+
+const nextEmployeeStatus = {
+    ASSIGNED: "IN_PROGRESS",
+    IN_PROGRESS: "WAITING_FOR_CUSTOMER",
+    WAITING_FOR_CUSTOMER: "RESOLVED",
+};
+
 
 const formatInquiry = ({ number, ...inquiryDetails }) => {
     const year = inquiryDetails.createdAt.getUTCFullYear();
@@ -222,3 +233,99 @@ export const assignInquiry = async (inquiryId, adminId, data) => {
         return formatInquiry(updatedInquiry);
     })
 }
+
+
+export const getAssignedInquires = async (employeeId) => {
+    const inquiry = await db
+        .select({
+            id: inquiries.id,
+            number: inquiries.number,
+            subject: inquiries.subject,
+            status: inquiries.status,
+            priority: inquiries.priority,
+            createdAt: inquiries.createdAt
+        })
+        .from(inquiries)
+        .where(eq(inquiries.assignedEmployeeId, employeeId))
+        .orderBy(desc(inquiries.createdAt), desc(inquiries.number))
+
+    return inquiry.map(formatInquiry)
+}
+
+export const getAssignedInquiry = async (inquiryId, employeeId) => {
+    const id = inquiryIdSchema.parse(inquiryId);
+    const [inquiry] = await db
+        .select({
+            id: inquiries.id,
+            number: inquiries.number,
+            subject: inquiries.subject,
+            description: inquiries.description,
+            status: inquiries.status,
+            priority: inquiries.priority,
+            version: inquiries.version,
+            createdAt: inquiries.createdAt
+
+        }).from(inquiries)
+        .where(
+            and(eq(inquiries.id, id),
+                eq(inquiries.assignedEmployeeId, employeeId)
+            )
+        ).limit(1);
+
+    if (!inquiry) {
+        throw new AppError("Inquiry not found", 404);
+    }
+
+    return formatInquiry(inquiry)
+}
+
+export const updateAssignedInquiryStatus = async (inquiryId, employeeId, data) => {
+    const id = inquiryIdSchema.parse(inquiryId);
+    const { status, version } = employeeStatusSchema.parse(data);
+    return db.transaction(async (t) => {
+        const [inquiry] = await t
+            .select()
+            .from(inquiries)
+            .where(
+                and(
+                    eq(inquiries.id, id),
+                    eq(inquiries.assignedEmployeeId, employeeId)
+                )
+            )
+            .for("update");
+
+        if (!inquiry) {
+            throw new AppError("Inquiry not found ", 404)
+        }
+
+        if (inquiry.version !== version) {
+            throw new AppError("This inquiry was updated. Refresh and try again.", 409);
+        }
+
+        if (nextEmployeeStatus[inquiry.status] !== status) {
+            throw new AppError("This status change is not allowed.", 409);
+        }
+
+        const [updatedInquiry] = await t
+            .update(inquiries)
+            .set({
+                status,
+                version: inquiry.version + 1,
+                updatedAt: new Date(),
+            })
+            .where(eq(inquiries.id, id))
+            .returning();
+
+        await t.insert(statusHistory).values({
+            inquiryId: id,
+            changedBy: employeeId,
+            fromStatus: inquiry.status,
+            toStatus: status,
+        });
+
+        return formatInquiry(updatedInquiry);
+
+    })
+
+}
+
