@@ -1,14 +1,23 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { db } from "../config/db/db.mjs"
-import { inquiries } from "../config/db/schema/schema.inquiries.mjs";
+import { inquiries, inquiryPriorityEnum } from "../config/db/schema/schema.inquiries.mjs";
 import { z } from "zod"
 import AppError from "../utils/AppError.mjs";
 import { customer } from "../config/db/schema/schema.customers.mjs";
 import { employee } from "../config/db/schema/schema.employees.mjs";
+import { users } from "../config/db/schema/schema.users.mjs";
+import { assignments } from "../config/db/schema/schema.assignments.mjs";
+import { statusHistory } from "../config/db/schema/schema.statusHistory.mjs";
 
 const createInquirySchema = z.object({
     subject: z.string().trim().min(1).max(150),
     description: z.string().trim().min(1).max(5000),
+}).strict();
+
+const assignInquirySchema = z.object({
+    employeeId: z.string().uuid(),
+    priority: z.enum(inquiryPriorityEnum.enumValues).optional(),
+    version: z.number().int().positive(),
 }).strict();
 
 const inquiryIdSchema = z.string().uuid();
@@ -111,4 +120,105 @@ export const inquriesAdmin = async () => {
         .leftJoin(employee, eq(employee.userId, inquiries.assignedEmployeeId))
         .orderBy(desc(inquiries.createdAt), desc(inquiries.number));
     return inquiry.map(formatInquiry)
+}
+
+
+export const listAssignableEmployee = async () => {
+    return db
+        .select({
+            id: users.id,
+            fullName: employee.fullName,
+            email: users.email
+        })
+        .from(employee)
+        .innerJoin(users, eq(users.id, employee.userId))
+        .where(and(
+            eq(users.role, "EMPLOYEE"),
+            eq(users.isActive, true)
+        ))
+        .orderBy(asc(employee.fullName), asc(users.id));
+}
+
+
+export const assignInquiry = async (inquiryId, adminId, data) => {
+    const id = inquiryIdSchema.parse(inquiryId);
+    const { employeeId, priority, version } = assignInquirySchema.parse(data);
+
+    return db.transaction(async (t) => {
+        const [inquiry] = await t
+            .select()
+            .from(inquiries)
+            .where(eq(inquiries.id, id))
+            .for("update");
+
+        if (!inquiry) {
+            throw new AppError("Inquiry not Found", 404);
+        }
+
+        if (inquiry.version !== version) {
+            throw new AppError("This Inquiry was updated", 409)
+        }
+
+        if (inquiry.status === "RESOLVED") {
+            throw new AppError("Inquiry Relosved", 409)
+        }
+
+        if (inquiry.status === "CLOSED") {
+            throw new AppError("Inquiry CLOSED", 409)
+        }
+
+        const [assignee] = await t
+            .select({
+                role: users.role,
+                isActive: users.isActive
+            })
+            .from(employee)
+            .innerJoin(users, eq(users.id, employee.userId))
+            .where(eq(employee.userId, employeeId))
+            .for("share");
+
+        if (!assignee || assignee.role !== "EMPLOYEE" || !assignee.isActive) {
+            throw new AppError("Not an Emploee", 400)
+        }
+
+        const employeeChanged = inquiry.assignedEmployeeId !== employeeId;
+        const nextPriority = priority === undefined ? inquiry.priority : priority;
+        const nextStatus = inquiry.status === "NEW" ? "ASSIGNED" : inquiry.status;
+        const statusChanged = nextStatus !== inquiry.status;
+
+        if (!employeeChanged && !statusChanged && nextPriority === inquiry.priority) {
+            return formatInquiry(inquiry);
+        }
+
+        const [updatedInquiry] = await t
+            .update(inquiries)
+            .set({
+                assignedEmployeeId: employeeId,
+                priority: nextPriority,
+                status: nextStatus,
+                version: inquiry.version + 1,
+                updatedAt: new Date(),
+            })
+            .where(eq(inquiries.id, id))
+            .returning();
+
+        if (employeeChanged) {
+            await t.insert(assignments).values({
+                inquiryId: id,
+                employeeId,
+                assignedBy: adminId,
+            });
+        }
+
+        if (statusChanged) {
+            await t.insert(statusHistory).values({
+                inquiryId: id,
+                changedBy: adminId,
+                fromStatus: inquiry.status,
+                toStatus: nextStatus,
+            })
+        }
+
+        return formatInquiry(updatedInquiry);
+    })
 }
