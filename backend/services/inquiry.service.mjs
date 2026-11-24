@@ -22,8 +22,14 @@ const assignInquirySchema = z.object({
 
 const inquiryIdSchema = z.string().uuid();
 
+
 const employeeStatusSchema = z.object({
     status: z.enum(["IN_PROGRESS", "WAITING_FOR_CUSTOMER", "RESOLVED"]),
+    version: z.number().int().positive(),
+}).strict();
+
+
+const reopenInquirySchema = z.object({
     version: z.number().int().positive(),
 }).strict();
 
@@ -327,5 +333,56 @@ export const updateAssignedInquiryStatus = async (inquiryId, employeeId, data) =
 
         return formatInquiry(updatedInquiry);
     });
+};
+
+export const reopenInquiry = async (inquiryId, admin, data) => {
+  if (admin.role !== "ADMIN") {
+    throw new AppError("Only admins can reopen inquiries.", 403);
+  }
+
+  const id = inquiryIdSchema.parse(inquiryId);
+  const { version } = reopenInquirySchema.parse(data);
+
+  return db.transaction(async (tx) => {
+    const [inquiry] = await tx
+      .select({
+        status: inquiries.status,
+        version: inquiries.version,
+      })
+      .from(inquiries)
+      .where(eq(inquiries.id, id))
+      .for("update");
+
+    if (!inquiry) {
+      throw new AppError("Inquiry not found.", 404);
+    }
+
+    if (inquiry.version !== version) {
+      throw new AppError("This inquiry was updated. Refresh and try again.", 409);
+    }
+
+    if (inquiry.status !== "RESOLVED") {
+      throw new AppError("Only resolved inquiries can be reopened.", 409);
+    }
+
+    const [updatedInquiry] = await tx
+      .update(inquiries)
+      .set({
+        status: "IN_PROGRESS",
+        version: inquiry.version + 1,
+        updatedAt: new Date(),
+      })
+      .where(eq(inquiries.id, id))
+      .returning();
+
+    await tx.insert(statusHistory).values({
+      inquiryId: id,
+      changedBy: admin.id,
+      fromStatus: inquiry.status,
+      toStatus: updatedInquiry.status,
+    });
+
+    return formatInquiry(updatedInquiry);
+  });
 };
 
