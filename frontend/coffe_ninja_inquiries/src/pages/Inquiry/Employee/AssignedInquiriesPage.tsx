@@ -1,17 +1,26 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useGetAssignedInquiriesQuery } from "../../../features/inquiries/inquiriesApi";
-import PublicReplyForm from "../../messages/PublicReplyForm";
 
 export default function AssignedInquiriesPage() {
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+
   const {
     data: inquiries = [],
     isLoading,
-    isFetching,
     isError,
     refetch,
-  } = useGetAssignedInquiriesQuery(undefined, {
-    refetchOnMountOrArgChange: true,
-  });
+  } = useGetAssignedInquiriesQuery();
+
+  const handleRefresh = async () => {
+    if (isManualRefreshing) return;
+    setIsManualRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setIsManualRefreshing(false);
+    }
+  };
 
   return (
     <main className="mx-auto max-w-3xl space-y-6 px-6 py-8">
@@ -21,10 +30,10 @@ export default function AssignedInquiriesPage() {
         <button
           type="button"
           className="rounded border px-3 py-2 disabled:opacity-50"
-          disabled={isFetching}
-          onClick={() => void refetch()}
+          disabled={isManualRefreshing}
+          onClick={() => void handleRefresh()}
         >
-          {isFetching ? "Refreshing…" : isError ? "Retry" : "Refresh"}
+          {isManualRefreshing ? "Refreshing…" : isError ? "Retry" : "Refresh"}
         </button>
       </header>
 
@@ -51,9 +60,6 @@ export default function AssignedInquiriesPage() {
                 {inquiry.status.replace(/_/g, " ")} · {inquiry.priority}{" "}
                 priority
               </p>
-              {inquiry.status !== "CLOSED" && (
-                <PublicReplyForm key={inquiry.id} inquiryId={inquiry.id} />
-              )}
             </li>
           ))}
         </ul>
