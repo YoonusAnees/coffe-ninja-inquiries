@@ -22,6 +22,27 @@
       "when": 1795440429782,
       "tag": "0002_admin-assignment",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795480404165,
+      "tag": "0003_add_inquiry_messages",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795480913482,
+      "tag": "0004_admin-assignment",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795481056852,
+      "tag": "0005_admin-assignment",
+      "breakpoints": true
     }
   ]
 }
