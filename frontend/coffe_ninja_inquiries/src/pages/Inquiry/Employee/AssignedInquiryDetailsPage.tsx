@@ -16,19 +16,33 @@ type StatusAction = {
   label: string;
 };
 
-const statusActions: Partial<Record<InquiryStatus, StatusAction>> = {
-  ASSIGNED: {
-    status: "IN_PROGRESS",
-    label: "Start Working",
-  },
-  WAITING_FOR_CUSTOMER: {
-    status: "IN_PROGRESS",
-    label: "Resume Work",
-  },
-  IN_PROGRESS: {
-    status: "RESOLVED",
-    label: "Mark as Resolved",
-  },
+const statusActions: Partial<Record<InquiryStatus, StatusAction[]>> = {
+  ASSIGNED: [
+    {
+      status: "IN_PROGRESS",
+      label: "Start Working",
+    },
+  ],
+  IN_PROGRESS: [
+    {
+      status: "WAITING_FOR_CUSTOMER",
+      label: "Waiting for Customer",
+    },
+    {
+      status: "RESOLVED",
+      label: "Mark as Resolved",
+    },
+  ],
+  WAITING_FOR_CUSTOMER: [
+    {
+      status: "IN_PROGRESS",
+      label: "Resume Work",
+    },
+    {
+      status: "RESOLVED",
+      label: "Mark as Resolved",
+    },
+  ],
 };
 
 export default function AssignedInquiryDetailsPage() {
@@ -40,6 +54,7 @@ export default function AssignedInquiryDetailsPage() {
     currentData: inquiry,
     isLoading,
     isError,
+    isFetching,
     refetch,
   } = useGetAssignedInquiryQuery(id ?? "", {
     skip: !id,
@@ -48,7 +63,7 @@ export default function AssignedInquiryDetailsPage() {
   const [updateStatus, statusUpdate] = useUpdateAssignedStatusMutation();
 
   const isInitialLoading = isLoading || (!inquiry && !isError && Boolean(id));
-  const action = inquiry ? statusActions[inquiry.status] : null;
+  const availableActions = inquiry ? (statusActions[inquiry.status] ?? []) : [];
   const hasConflict =
     statusUpdate.error &&
     "status" in statusUpdate.error &&
@@ -64,25 +79,19 @@ export default function AssignedInquiryDetailsPage() {
     }
   };
 
-  const handleStatusUpdate = async () => {
-    if (
-      !inquiry ||
-      !action ||
-      statusUpdate.isLoading ||
-      isInitialLoading ||
-      hasConflict
-    ) {
+  const handleStatusUpdate = async (nextStatus: EmployeeNextStatus) => {
+    if (!inquiry || statusUpdate.isLoading || isFetching || hasConflict) {
       return;
     }
 
     const result = await updateStatus({
       inquiryId: inquiry.id,
-      status: action.status,
+      status: nextStatus,
       version: inquiry.version,
     });
 
     if (
-      "error" in result &&
+      result.error &&
       "status" in result.error &&
       result.error.status === 404
     ) {
@@ -144,15 +153,28 @@ export default function AssignedInquiryDetailsPage() {
           </p>
           <p className="whitespace-pre-wrap">{inquiry.description}</p>
 
-          {action && (
-            <button
-              type="button"
-              className="rounded bg-slate-900 px-4 py-2 text-white disabled:opacity-50"
-              disabled={statusUpdate.isLoading || Boolean(hasConflict)}
-              onClick={() => void handleStatusUpdate()}
+          {availableActions.length > 0 && (
+            <div
+              className="flex flex-wrap gap-2"
+              role="group"
+              aria-label="Inquiry status actions"
             >
-              {statusUpdate.isLoading ? "Saving…" : action.label}
-            </button>
+              {availableActions.map((action) => (
+                <button
+                  key={action.status}
+                  type="button"
+                  className="rounded border px-4 py-2 disabled:opacity-50"
+                  disabled={
+                    statusUpdate.isLoading || isFetching || Boolean(hasConflict)
+                  }
+                  onClick={() => void handleStatusUpdate(action.status)}
+                >
+                  {action.label}
+                </button>
+              ))}
+
+              {statusUpdate.isLoading && <p role="status">Updating status…</p>}
+            </div>
           )}
 
           {hasConflict && (
