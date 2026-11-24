@@ -5,7 +5,6 @@ import {
   useGetAdminInquiriesQuery,
   useGetAssignableEmployeesQuery,
 } from "../../features/inquiries/inquiriesApi";
-import ReopenInquiryButton from "./ResolvedInquiryActions";
 import ResolvedInquiryActions from "./ResolvedInquiryActions";
 
 export default function AdminInquiriesPage() {
