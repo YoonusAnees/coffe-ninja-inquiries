@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useGetAssignedInquiriesQuery } from "../../../features/inquiries/inquiriesApi";
+import PublicReplyForm from "../../messages/PublicReplyForm";
 
 export default function AssignedInquiriesPage() {
   const {
@@ -16,7 +17,6 @@ export default function AssignedInquiriesPage() {
     <main className="mx-auto max-w-3xl space-y-6 px-6 py-8">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Assigned Inquiries</h1>
-     
 
         <button
           type="button"
@@ -39,18 +39,21 @@ export default function AssignedInquiriesPage() {
           {inquiries.map((inquiry) => (
             <li key={inquiry.id} className="rounded border p-4">
               <p className="text-sm text-slate-600">{inquiry.reference}</p>
-                 <h2 className="font-semibold">
-          <Link
-            className="underline"
-            to={`/employee/inquiries/${encodeURIComponent(inquiry.id)}`}
-          >
-            {inquiry.subject}
-          </Link>
-        </h2>
+              <h2 className="font-semibold">
+                <Link
+                  className="underline"
+                  to={`/employee/inquiries/${encodeURIComponent(inquiry.id)}`}
+                >
+                  {inquiry.subject}
+                </Link>
+              </h2>
               <p className="mt-1 text-sm text-slate-700">
                 {inquiry.status.replace(/_/g, " ")} · {inquiry.priority}{" "}
                 priority
               </p>
+              {inquiry.status !== "CLOSED" && (
+                <PublicReplyForm key={inquiry.id} inquiryId={inquiry.id} />
+              )}
             </li>
           ))}
         </ul>

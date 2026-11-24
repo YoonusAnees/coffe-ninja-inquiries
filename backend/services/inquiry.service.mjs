@@ -27,10 +27,10 @@ const employeeStatusSchema = z.object({
     version: z.number().int().positive(),
 }).strict();
 
-const nextEmployeeStatus = {
-    ASSIGNED: "IN_PROGRESS",
-    IN_PROGRESS: "WAITING_FOR_CUSTOMER",
-    WAITING_FOR_CUSTOMER: "RESOLVED",
+const allowedEmployeeTransitions = {
+    ASSIGNED: ["IN_PROGRESS"],
+    IN_PROGRESS: ["WAITING_FOR_CUSTOMER", "RESOLVED"],
+    WAITING_FOR_CUSTOMER: ["IN_PROGRESS", "RESOLVED"],
 };
 
 
@@ -107,7 +107,7 @@ export const getMyInquryById = async (customerId, dataId) => {
         ).limit(1);
 
     if (!inquiry) {
-        throw AppError("Inquiry not Found", 404)
+        throw new AppError("Inquiry not Found", 404)
     }
 
     return formatInquiry(inquiry)
@@ -282,6 +282,7 @@ export const getAssignedInquiry = async (inquiryId, employeeId) => {
 export const updateAssignedInquiryStatus = async (inquiryId, employeeId, data) => {
     const id = inquiryIdSchema.parse(inquiryId);
     const { status, version } = employeeStatusSchema.parse(data);
+
     return db.transaction(async (t) => {
         const [inquiry] = await t
             .select()
@@ -289,20 +290,21 @@ export const updateAssignedInquiryStatus = async (inquiryId, employeeId, data) =
             .where(
                 and(
                     eq(inquiries.id, id),
-                    eq(inquiries.assignedEmployeeId, employeeId)
-                )
+                    eq(inquiries.assignedEmployeeId, employeeId),
+                ),
             )
             .for("update");
 
         if (!inquiry) {
-            throw new AppError("Inquiry not found ", 404)
+            throw new AppError("Inquiry not found.", 404);
         }
 
         if (inquiry.version !== version) {
             throw new AppError("This inquiry was updated. Refresh and try again.", 409);
         }
 
-        if (nextEmployeeStatus[inquiry.status] !== status) {
+        const allowedNext = allowedEmployeeTransitions[inquiry.status] ?? [];
+        if (!allowedNext.includes(status)) {
             throw new AppError("This status change is not allowed.", 409);
         }
 
@@ -324,8 +326,6 @@ export const updateAssignedInquiryStatus = async (inquiryId, employeeId, data) =
         });
 
         return formatInquiry(updatedInquiry);
-
-    })
-
-}
+    });
+};
 

@@ -28,6 +28,9 @@ export const messages = pgTable(
             .notNull()
             .references(() => users.id, { onDelete: "restrict" }),
 
+        replyToMessageId: uuid("reply_to_message_id")
+            .references(() => messages.id, { onDelete: "set null" }),
+
         body: text("body").notNull(),
         visibility: messageVisibilityEnum("visibility").notNull(),
 

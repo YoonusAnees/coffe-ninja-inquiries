@@ -1,6 +1,7 @@
 import { Link, Navigate, useParams } from "react-router-dom";
 
 import { useGetMyInquiryQuery } from "../../features/inquiries/inquiriesApi";
+import CustomerReplies from "../messages/CustomerReplies";
 
 export default function InquiryDetailsPage() {
   const { id = "" } = useParams<{ id: string }>();
@@ -67,6 +68,7 @@ export default function InquiryDetailsPage() {
             Submitted {new Date(inquiry.createdAt).toLocaleString()}
           </p>
           <p className="mt-4 whitespace-pre-wrap">{inquiry.description}</p>
+          {inquiry && <CustomerReplies inquiryId={inquiry.id} />}
         </article>
       )}
     </main>
