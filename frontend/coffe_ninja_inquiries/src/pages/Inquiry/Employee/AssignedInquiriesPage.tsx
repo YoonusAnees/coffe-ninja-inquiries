@@ -1,30 +1,39 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useGetAssignedInquiriesQuery } from "../../../features/inquiries/inquiriesApi";
 
 export default function AssignedInquiriesPage() {
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+
   const {
     data: inquiries = [],
     isLoading,
-    isFetching,
     isError,
     refetch,
-  } = useGetAssignedInquiriesQuery(undefined, {
-    refetchOnMountOrArgChange: true,
-  });
+  } = useGetAssignedInquiriesQuery();
+
+  const handleRefresh = async () => {
+    if (isManualRefreshing) return;
+    setIsManualRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setIsManualRefreshing(false);
+    }
+  };
 
   return (
     <main className="mx-auto max-w-3xl space-y-6 px-6 py-8">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Assigned Inquiries</h1>
-     
 
         <button
           type="button"
           className="rounded border px-3 py-2 disabled:opacity-50"
-          disabled={isFetching}
-          onClick={() => void refetch()}
+          disabled={isManualRefreshing}
+          onClick={() => void handleRefresh()}
         >
-          {isFetching ? "Refreshing…" : isError ? "Retry" : "Refresh"}
+          {isManualRefreshing ? "Refreshing…" : isError ? "Retry" : "Refresh"}
         </button>
       </header>
 
@@ -39,14 +48,14 @@ export default function AssignedInquiriesPage() {
           {inquiries.map((inquiry) => (
             <li key={inquiry.id} className="rounded border p-4">
               <p className="text-sm text-slate-600">{inquiry.reference}</p>
-                 <h2 className="font-semibold">
-          <Link
-            className="underline"
-            to={`/employee/inquiries/${encodeURIComponent(inquiry.id)}`}
-          >
-            {inquiry.subject}
-          </Link>
-        </h2>
+              <h2 className="font-semibold">
+                <Link
+                  className="underline"
+                  to={`/employee/inquiries/${encodeURIComponent(inquiry.id)}`}
+                >
+                  {inquiry.subject}
+                </Link>
+              </h2>
               <p className="mt-1 text-sm text-slate-700">
                 {inquiry.status.replace(/_/g, " ")} · {inquiry.priority}{" "}
                 priority

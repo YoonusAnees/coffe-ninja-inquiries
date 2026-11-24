@@ -1,4 +1,4 @@
-import { createInqury, listMyInquiries, getMyInquryById, inquriesAdmin, listAssignableEmployee, assignInquiry, getAssignedInquires, getAssignedInquiry, updateAssignedInquiryStatus } from "../services/inquiry.service.mjs";
+import { createInqury, listMyInquiries, getMyInquryById, inquriesAdmin, listAssignableEmployee, assignInquiry, getAssignedInquires, getAssignedInquiry, updateAssignedInquiryStatus, reopenInquiry, closeInquiry } from "../services/inquiry.service.mjs";
 
 export const submitInquiry = async (req, res, next) => {
     try {
@@ -139,6 +139,39 @@ export const changeAssignedInquiryStatus = async (req, res, next) => {
         })
 
     } catch (error) {
-
+        return next(error)
     }
 }
+
+
+export const reopenResolvedInquiry = async (req, res, next) => {
+    try {
+        const inquiry = await reopenInquiry(req.params.id, req.user, req.body);
+
+        res.set("Cache-Control", "no-store");
+
+        return res.status(200).json({
+            success: true,
+            message: "Inquiry reopened.",
+            data: { inquiry },
+        });
+    } catch (error) {
+        return next(error);
+    }
+};
+
+export const closeResolvedInquiry = async (req, res, next) => {
+    try {
+        const inquiry = await closeInquiry(req.params.id, req.user, req.body);
+
+        res.set("Cache-Control", "no-store");
+
+        return res.status(200).json({
+            success: true,
+            message: "Inquiry closed.",
+            data: { inquiry },
+        });
+    } catch (error) {
+        return next(error);
+    }
+};

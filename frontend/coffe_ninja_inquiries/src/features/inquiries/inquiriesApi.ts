@@ -92,6 +92,22 @@ type UpdateAssignedStatusInput = {
   version: number;
 };
 
+type ReopenInquiryInput = {
+  inquiryId: string;
+  version: number;
+};
+
+type ResolvedInquiryActionInput = {
+  inquiryId: string;
+  version: number;
+};
+
+type ClosedInquiry = {
+  id: string;
+  status: "CLOSED";
+  version: number;
+};
+
 
 const inquiryListTag = {type:"Inquiry",id:"LIST"} as const;
 
@@ -173,9 +189,50 @@ updateAssignedStatus: builder.mutation<AssignedInquiryDetails,  UpdateAssignedSt
       : [inquiryListTag, { type: "Inquiry", id: inquiryId }],
 }),
 
+reopenInquiry: builder.mutation<ResolvedInquiryActionInput, ReopenInquiryInput>({
+  query: ({ inquiryId, version }) => ({
+    url: `inquiry/${encodeURIComponent(inquiryId)}/reopen`,
+    method: "PATCH",
+    body: { version },
+  }),
+
+  transformResponse: (
+    response: ApiResponse<{ inquiry: ResolvedInquiryActionInput }>,
+  ) => response.data.inquiry,
+
+  invalidatesTags: (_result, error) => {
+    if (!error || error.status === 409) {
+      return ["Inquiry"];
+    }
+
+    return [];
+  },
+}),
+
+closeInquiry: builder.mutation<ClosedInquiry, ResolvedInquiryActionInput>({
+  query: ({ inquiryId, version }) => ({
+    url: `inquiry/${encodeURIComponent(inquiryId)}/close`,
+    method: "PATCH",
+    body: { version },
+  }),
+
+  transformResponse: (response: ApiResponse<{ inquiry: ClosedInquiry }>) =>
+    response.data.inquiry,
+
+  invalidatesTags: (_result, error) => {
+    if (!error || error.status === 409) {
+      return ["Inquiry"];
+    }
+
+    return [];
+  },
+}),
+
 
 
   }),
+
+  
 });
 
 export const {
@@ -187,7 +244,9 @@ export const {
   useGetAssignableEmployeesQuery,
   useGetAssignedInquiriesQuery,
   useGetAssignedInquiryQuery,
-  useUpdateAssignedStatusMutation
+  useUpdateAssignedStatusMutation,
+  useReopenInquiryMutation,
+  useCloseInquiryMutation 
 
   
   

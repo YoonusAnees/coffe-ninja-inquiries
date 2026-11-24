@@ -22,15 +22,21 @@ const assignInquirySchema = z.object({
 
 const inquiryIdSchema = z.string().uuid();
 
+
 const employeeStatusSchema = z.object({
     status: z.enum(["IN_PROGRESS", "WAITING_FOR_CUSTOMER", "RESOLVED"]),
     version: z.number().int().positive(),
 }).strict();
 
-const nextEmployeeStatus = {
-    ASSIGNED: "IN_PROGRESS",
-    IN_PROGRESS: "WAITING_FOR_CUSTOMER",
-    WAITING_FOR_CUSTOMER: "RESOLVED",
+
+const resolvedActionSchema = z.object({
+    version: z.number().int().positive(),
+}).strict();
+
+const allowedEmployeeTransitions = {
+    ASSIGNED: ["IN_PROGRESS"],
+    IN_PROGRESS: ["WAITING_FOR_CUSTOMER", "RESOLVED"],
+    WAITING_FOR_CUSTOMER: ["IN_PROGRESS", "RESOLVED"],
 };
 
 
@@ -107,7 +113,7 @@ export const getMyInquryById = async (customerId, dataId) => {
         ).limit(1);
 
     if (!inquiry) {
-        throw AppError("Inquiry not Found", 404)
+        throw new AppError("Inquiry not Found", 404)
     }
 
     return formatInquiry(inquiry)
@@ -282,6 +288,7 @@ export const getAssignedInquiry = async (inquiryId, employeeId) => {
 export const updateAssignedInquiryStatus = async (inquiryId, employeeId, data) => {
     const id = inquiryIdSchema.parse(inquiryId);
     const { status, version } = employeeStatusSchema.parse(data);
+
     return db.transaction(async (t) => {
         const [inquiry] = await t
             .select()
@@ -289,20 +296,21 @@ export const updateAssignedInquiryStatus = async (inquiryId, employeeId, data) =
             .where(
                 and(
                     eq(inquiries.id, id),
-                    eq(inquiries.assignedEmployeeId, employeeId)
-                )
+                    eq(inquiries.assignedEmployeeId, employeeId),
+                ),
             )
             .for("update");
 
         if (!inquiry) {
-            throw new AppError("Inquiry not found ", 404)
+            throw new AppError("Inquiry not found.", 404);
         }
 
         if (inquiry.version !== version) {
             throw new AppError("This inquiry was updated. Refresh and try again.", 409);
         }
 
-        if (nextEmployeeStatus[inquiry.status] !== status) {
+        const allowedNext = allowedEmployeeTransitions[inquiry.status] ?? [];
+        if (!allowedNext.includes(status)) {
             throw new AppError("This status change is not allowed.", 409);
         }
 
@@ -324,8 +332,63 @@ export const updateAssignedInquiryStatus = async (inquiryId, employeeId, data) =
         });
 
         return formatInquiry(updatedInquiry);
+    });
+};
 
-    })
+const changeResolvedInquiryStatus = async (inquiryId, admin, data, nextStatus) => {
+    if (admin.role !== "ADMIN") {
+        throw new AppError("Only admins can reopen or close inquiries.", 403);
+    }
 
-}
+    const id = inquiryIdSchema.parse(inquiryId);
+    const { version } = resolvedActionSchema.parse(data);
+
+    return db.transaction(async (tx) => {
+        const [inquiry] = await tx
+            .select({
+                status: inquiries.status,
+                version: inquiries.version,
+            })
+            .from(inquiries)
+            .where(eq(inquiries.id, id))
+            .for("update");
+
+        if (!inquiry) {
+            throw new AppError("Inquiry not found.", 404);
+        }
+
+        if (inquiry.version !== version) {
+            throw new AppError("This inquiry was updated. Refresh and try again.", 409);
+        }
+
+        if (inquiry.status !== "RESOLVED") {
+            throw new AppError("This action requires a resolved inquiry.", 409);
+        }
+
+        const [updatedInquiry] = await tx
+            .update(inquiries)
+            .set({
+                status: nextStatus,
+                version: inquiry.version + 1,
+                updatedAt: new Date(),
+            })
+            .where(eq(inquiries.id, id))
+            .returning();
+
+        await tx.insert(statusHistory).values({
+            inquiryId: id,
+            changedBy: admin.id,
+            fromStatus: inquiry.status,
+            toStatus: updatedInquiry.status,
+        });
+
+        return formatInquiry(updatedInquiry);
+    });
+};
+
+export const reopenInquiry = (inquiryId, admin, data) =>
+    changeResolvedInquiryStatus(inquiryId, admin, data, "IN_PROGRESS");
+
+export const closeInquiry = (inquiryId, admin, data) =>
+    changeResolvedInquiryStatus(inquiryId, admin, data, "CLOSED");
 

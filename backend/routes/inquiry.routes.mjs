@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getMyInquiries, submitInquiry, getById, getAdminInquiries, getAssinableEmployees, updatedInquiryAssignment, listAssignedInquires, showAssignedInquiry, changeAssignedInquiryStatus } from "../controllers/inquiry.controller.mjs";
+import { getMyInquiries, submitInquiry, getById, getAdminInquiries, getAssinableEmployees, updatedInquiryAssignment, listAssignedInquires, showAssignedInquiry, changeAssignedInquiryStatus, reopenResolvedInquiry, closeResolvedInquiry } from "../controllers/inquiry.controller.mjs";
 import { verifyUser } from "../middlewares/authenticate.mjs";
 import { rolebasedAccess } from "../middlewares/authorize.mjs";
 
@@ -10,6 +10,8 @@ router.get("/my", verifyUser, rolebasedAccess("CUSTOMER"), getMyInquiries)
 router.get("/admin", verifyUser, rolebasedAccess("ADMIN"), getAdminInquiries)
 router.get("/get-employee", verifyUser, rolebasedAccess("ADMIN"), getAssinableEmployees)
 router.get("/assigned", verifyUser, rolebasedAccess("EMPLOYEE"), listAssignedInquires)
+router.patch("/:id/reopen", verifyUser, rolebasedAccess("ADMIN"), reopenResolvedInquiry)
+router.patch("/:id/close", verifyUser, rolebasedAccess("ADMIN"), closeResolvedInquiry)
 router.patch("/assigned/:id/status", verifyUser, rolebasedAccess("EMPLOYEE"), changeAssignedInquiryStatus)
 router.get("/assigned/:id", verifyUser, rolebasedAccess("EMPLOYEE"), showAssignedInquiry)
 router.patch("/:id/assignment", verifyUser, rolebasedAccess("ADMIN"), updatedInquiryAssignment)

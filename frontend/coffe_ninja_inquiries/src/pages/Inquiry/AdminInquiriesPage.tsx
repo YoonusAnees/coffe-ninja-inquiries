@@ -5,6 +5,7 @@ import {
   useGetAdminInquiriesQuery,
   useGetAssignableEmployeesQuery,
 } from "../../features/inquiries/inquiriesApi";
+import ResolvedInquiryActions from "./ResolvedInquiryActions";
 
 export default function AdminInquiriesPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -57,6 +58,13 @@ export default function AdminInquiriesPage() {
           <section className="space-y-4 rounded border p-4">
             <h2 className="text-xl font-semibold">{inquiry.subject}</h2>
             <p className="whitespace-pre-wrap">{inquiry.description}</p>
+
+            {inquiry.status === "RESOLVED" && (
+              <ResolvedInquiryActions
+                inquiryId={inquiry.id}
+                version={inquiry.version}
+              />
+            )}
 
             {employeeList.isLoading && <p role="status">Loading employees…</p>}
 
