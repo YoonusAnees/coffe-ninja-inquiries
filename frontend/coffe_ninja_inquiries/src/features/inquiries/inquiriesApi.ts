@@ -92,6 +92,18 @@ type UpdateAssignedStatusInput = {
   version: number;
 };
 
+type ReopenInquiryInput = {
+  inquiryId: string;
+  version: number;
+};
+
+type ReopenedInquiry = {
+  id: string;
+  status: "IN_PROGRESS";
+  assignedEmployeeId: string | null;
+  version: number;
+};
+
 
 const inquiryListTag = {type:"Inquiry",id:"LIST"} as const;
 
@@ -173,6 +185,26 @@ updateAssignedStatus: builder.mutation<AssignedInquiryDetails,  UpdateAssignedSt
       : [inquiryListTag, { type: "Inquiry", id: inquiryId }],
 }),
 
+reopenInquiry: builder.mutation<ReopenedInquiry, ReopenInquiryInput>({
+  query: ({ inquiryId, version }) => ({
+    url: `inquiry/${encodeURIComponent(inquiryId)}/reopen`,
+    method: "PATCH",
+    body: { version },
+  }),
+
+  transformResponse: (
+    response: ApiResponse<{ inquiry: ReopenedInquiry }>,
+  ) => response.data.inquiry,
+
+  invalidatesTags: (_result, error) => {
+    if (!error || error.status === 409) {
+      return ["Inquiry"];
+    }
+
+    return [];
+  },
+}),
+
 
 
   }),
@@ -187,7 +219,8 @@ export const {
   useGetAssignableEmployeesQuery,
   useGetAssignedInquiriesQuery,
   useGetAssignedInquiryQuery,
-  useUpdateAssignedStatusMutation
+  useUpdateAssignedStatusMutation,
+  useReopenInquiryMutation 
 
   
   
