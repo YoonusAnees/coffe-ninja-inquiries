@@ -5,7 +5,8 @@ import {
   useGetAdminInquiriesQuery,
   useGetAssignableEmployeesQuery,
 } from "../../features/inquiries/inquiriesApi";
-import ReopenInquiryButton from "./ReopenInquiryButton";
+import ReopenInquiryButton from "./ResolvedInquiryActions";
+import ResolvedInquiryActions from "./ResolvedInquiryActions";
 
 export default function AdminInquiriesPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -60,7 +61,7 @@ export default function AdminInquiriesPage() {
             <p className="whitespace-pre-wrap">{inquiry.description}</p>
 
             {inquiry.status === "RESOLVED" && (
-              <ReopenInquiryButton
+              <ResolvedInquiryActions
                 inquiryId={inquiry.id}
                 version={inquiry.version}
               />
