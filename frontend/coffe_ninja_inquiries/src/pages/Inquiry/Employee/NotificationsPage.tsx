@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { io } from "socket.io-client";
 
 import { useGetMeQuery } from "../../../features/auth/authApi";
 import {
@@ -69,15 +71,48 @@ function NotificationRow({ notification, userId }: NotificationRowProps) {
 }
 
 function EmployeeInbox({ userId }: { userId: string }) {
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+
   const {
     currentData: notifications = [],
     isLoading,
-    isFetching,
     isError,
     refetch,
   } = useGetMyNotificationsQuery(userId, {
     refetchOnMountOrArgChange: true,
   });
+
+  useEffect(() => {
+    const socket = io({
+      autoConnect: false,
+      transports: ["websocket"],
+    });
+
+    const refreshInbox = () => {
+      void refetch();
+    };
+
+    socket.on("notifications:ready", refreshInbox);
+    socket.on("notifications:changed", refreshInbox);
+
+    socket.connect();
+
+    return () => {
+      socket.off("notifications:ready", refreshInbox);
+      socket.off("notifications:changed", refreshInbox);
+      socket.disconnect();
+    };
+  }, [userId, refetch]);
+
+  const handleManualRefresh = async () => {
+    if (isManualRefreshing) return;
+    setIsManualRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setIsManualRefreshing(false);
+    }
+  };
 
   const unreadCount = notifications.filter(
     (item) => item.readAt === null,
@@ -100,10 +135,10 @@ function EmployeeInbox({ userId }: { userId: string }) {
         <button
           type="button"
           className="rounded border px-3 py-2 disabled:opacity-50"
-          disabled={isFetching}
-          onClick={() => void refetch()}
+          disabled={isManualRefreshing}
+          onClick={() => void handleManualRefresh()}
         >
-          {isFetching ? "Refreshing…" : "Refresh"}
+          {isManualRefreshing ? "Refreshing…" : "Refresh"}
         </button>
       </header>
 

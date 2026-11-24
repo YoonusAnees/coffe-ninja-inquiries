@@ -9,6 +9,7 @@ import { users } from "../config/db/schema/schema.users.mjs";
 import { assignments } from "../config/db/schema/schema.assignments.mjs";
 import { statusHistory } from "../config/db/schema/schema.statusHistory.mjs";
 import { notifications } from "../config/db/schema/schema.notifications.mjs";
+import { notifyEmployeeInboxChanged } from "../config/notificationSocket.mjs";
 
 const createInquirySchema = z.object({
     subject: z.string().trim().min(1).max(150),
@@ -161,8 +162,9 @@ export const listAssignableEmployee = async () => {
 export const assignInquiry = async (inquiryId, adminId, data) => {
     const id = inquiryIdSchema.parse(inquiryId);
     const { employeeId, priority, version } = assignInquirySchema.parse(data);
+    let notificationRecipientId = null;
 
-    return db.transaction(async (t) => {
+    const result = await db.transaction(async (t) => {
         const [inquiry] = await t
             .select()
             .from(inquiries)
@@ -174,21 +176,21 @@ export const assignInquiry = async (inquiryId, adminId, data) => {
         }
 
         if (inquiry.version !== version) {
-            throw new AppError("This Inquiry was updated", 409)
+            throw new AppError("This Inquiry was updated", 409);
         }
 
         if (inquiry.status === "RESOLVED") {
-            throw new AppError("Inquiry Relosved", 409)
+            throw new AppError("Inquiry Resolved", 409);
         }
 
         if (inquiry.status === "CLOSED") {
-            throw new AppError("Inquiry CLOSED", 409)
+            throw new AppError("Inquiry CLOSED", 409);
         }
 
         const [assignee] = await t
             .select({
                 role: users.role,
-                isActive: users.isActive
+                isActive: users.isActive,
             })
             .from(employee)
             .innerJoin(users, eq(users.id, employee.userId))
@@ -196,7 +198,7 @@ export const assignInquiry = async (inquiryId, adminId, data) => {
             .for("share");
 
         if (!assignee || assignee.role !== "EMPLOYEE" || !assignee.isActive) {
-            throw new AppError("Not an Emploee", 400)
+            throw new AppError("Not an Employee", 400);
         }
 
         const employeeChanged = inquiry.assignedEmployeeId !== employeeId;
@@ -226,13 +228,15 @@ export const assignInquiry = async (inquiryId, adminId, data) => {
                 employeeId,
                 assignedBy: adminId,
             });
-        }
 
-        await t.insert(notifications).values({
-            recipientId: employeeId,
-            inquiryId: id,
-            type: "INQUIRY_ASSIGNED"
-        })
+            await t.insert(notifications).values({
+                recipientId: employeeId,
+                inquiryId: id,
+                type: "INQUIRY_ASSIGNED",
+            });
+
+            notificationRecipientId = employeeId;
+        }
 
         if (statusChanged) {
             await t.insert(statusHistory).values({
@@ -240,12 +244,18 @@ export const assignInquiry = async (inquiryId, adminId, data) => {
                 changedBy: adminId,
                 fromStatus: inquiry.status,
                 toStatus: nextStatus,
-            })
+            });
         }
 
         return formatInquiry(updatedInquiry);
-    })
-}
+    });
+
+    if (notificationRecipientId) {
+        notifyEmployeeInboxChanged(notificationRecipientId);
+    }
+
+    return result;
+};
 
 
 export const getAssignedInquires = async (employeeId) => {

@@ -16,6 +16,7 @@ const envSchema = z.object({
     JWT_SECRET: z.string().min(32),
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
     ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().positive(),
+    FRONTEND_ORIGIN: z.string().url(),
 
 });
 
