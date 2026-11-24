@@ -8,6 +8,7 @@ import { employee } from "../config/db/schema/schema.employees.mjs";
 import { users } from "../config/db/schema/schema.users.mjs";
 import { assignments } from "../config/db/schema/schema.assignments.mjs";
 import { statusHistory } from "../config/db/schema/schema.statusHistory.mjs";
+import { notifications } from "../config/db/schema/schema.notifications.mjs";
 
 const createInquirySchema = z.object({
     subject: z.string().trim().min(1).max(150),
@@ -226,6 +227,12 @@ export const assignInquiry = async (inquiryId, adminId, data) => {
                 assignedBy: adminId,
             });
         }
+
+        await t.insert(notifications).values({
+            recipientId: employeeId,
+            inquiryId: id,
+            type: "INQUIRY_ASSIGNED"
+        })
 
         if (statusChanged) {
             await t.insert(statusHistory).values({

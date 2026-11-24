@@ -26,6 +26,9 @@ export default function AssignedInquiriesPage() {
     <main className="mx-auto max-w-3xl space-y-6 px-6 py-8">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Assigned Inquiries</h1>
+        <Link to="/employee/notifications" className="rounded border px-3 py-2">
+          Notifications
+        </Link>
 
         <button
           type="button"
