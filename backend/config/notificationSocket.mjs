@@ -2,7 +2,7 @@ import cookieParser from "cookie-parser";
 import { Server } from "socket.io";
 
 import { verifyUser } from "../middlewares/authenticate.mjs";
-import { env } from "./env.mjs";
+import { allowedOrigins } from "./cors.mjs";
 
 let io;
 
@@ -14,8 +14,8 @@ export const attachNotificationSocket = (httpServer) => {
         transports: ["websocket"],
 
         allowRequest: (req, callback) => {
-            const allowedOrigin = new URL(env.FRONTEND_ORIGIN).origin;
-            callback(null, req.headers.origin === allowedOrigin);
+            const requestOrigin = req.headers.origin;
+            callback(null, Boolean(requestOrigin && allowedOrigins.has(requestOrigin)));
         },
     });
 

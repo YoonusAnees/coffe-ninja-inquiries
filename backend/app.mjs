@@ -1,6 +1,6 @@
 import express from "express"
 import cookieParser from 'cookie-parser';
-import { env } from "./config/env.mjs";
+import { allowedOrigins } from "./config/cors.mjs";
 import { apiLimiter } from "./middlewares/rateLimit.mjs";
 import errorMiddleware from "./middlewares/error.mjs";
 import authRoute from "./routes/auth.routes.mjs";
@@ -11,11 +11,6 @@ import reportRoute from "./routes/report.routes.mjs";
 
 const app = express();
 app.set("trust proxy", 1);
-
-const allowedOrigins = new Set([
-    new URL(env.FRONTEND_ORIGIN).origin,
-    "http://localhost:5173",
-]);
 
 app.use((req, res, next) => {
     const requestOrigin = req.headers.origin;

@@ -6,6 +6,7 @@ import AppLayout from "./components/layout/AppLayout";
 import NotFoundPage from "./pages/NotFoundPage";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminInquiriesPage from "./pages/admin/AdminInquiriesPage";
+import AdminUsersPage from "./pages/admin/AdminUsersPage";
 import AccountPage from "./pages/auth/AccountPage";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
@@ -56,6 +57,7 @@ function App() {
           <Route element={<RoleGuard allowedRoles={["ADMIN"]} />}>
             <Route path="/admin" element={<AdminDashboardPage />} />
             <Route path="/admin/inquiries" element={<AdminInquiriesPage />} />
+            <Route path="/admin/users" element={<AdminUsersPage />} />
           </Route>
         </Route>
 

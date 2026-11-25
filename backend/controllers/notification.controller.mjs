@@ -5,14 +5,15 @@ import {
 
 export const listMyNotifications = async (req, res, next) => {
     try {
-        const notifications = await getMyNotifications(req.user.id);
+        const { notifications, pagination, unreadCount } =
+            await getMyNotifications(req.user.id, req.query);
 
         res.set("Cache-Control", "no-store");
 
         return res.status(200).json({
             success: true,
             message: "Notifications fetched.",
-            data: { notifications },
+            data: { notifications, pagination, unreadCount },
         });
     } catch (error) {
         return next(error);

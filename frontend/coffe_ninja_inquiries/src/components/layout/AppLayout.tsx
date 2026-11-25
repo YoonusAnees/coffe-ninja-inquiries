@@ -34,10 +34,11 @@ function useNotificationSync(userId: string, role: UserRole) {
   const dispatch = useDispatch();
   const hasNotifications = role === "CUSTOMER" || role === "EMPLOYEE";
 
-  const { currentData: notifications, isError } = useGetMyNotificationsQuery(
-    userId,
-    { skip: !hasNotifications },
-  );
+  const { currentData: notificationSummary, isError } =
+    useGetMyNotificationsQuery(
+      { userId, page: 1, limit: 1 },
+      { skip: !hasNotifications },
+    );
 
   useEffect(() => {
     if (!hasNotifications) return;
@@ -85,7 +86,7 @@ function useNotificationSync(userId: string, role: UserRole) {
 
   const unreadCount = !hasNotifications || isError
     ? 0
-    : (notifications?.filter((item) => item.readAt === null).length ?? 0);
+    : (notificationSummary?.unreadCount ?? 0);
 
   return { unreadCount, hasNotifications };
 }
@@ -239,7 +240,7 @@ function AuthenticatedShell({
             type="button"
             onClick={() => void handleLogout()}
             disabled={isLoggingOut}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[#BCD0C4] transition-colors hover:bg-[#103326] hover:text-[#F5FAF7] disabled:opacity-50"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[#BCD0C4] transition-colors hover:bg-[#d00f28] hover:text-[#F5FAF7] disabled:opacity-50"
           >
             <LogOutIcon className="h-4 w-4 shrink-0" />
             <span>{isLoggingOut ? "Signing out…" : "Sign out"}</span>

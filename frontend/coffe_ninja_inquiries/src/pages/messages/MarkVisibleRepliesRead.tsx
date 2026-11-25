@@ -18,7 +18,12 @@ export default function MarkVisibleRepliesRead({
   userId,
   replies,
 }: Props) {
-  const { currentData: notifications } = useGetMyNotificationsQuery(userId);
+  const { currentData } = useGetMyNotificationsQuery({
+    userId,
+    page: 1,
+    limit: 10,
+  });
+  const notifications = currentData?.notifications;
   const [markRead] = useMarkNotificationReadMutation();
   const requestedIds = useRef(new Set<string>());
 

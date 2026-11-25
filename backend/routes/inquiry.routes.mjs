@@ -16,7 +16,6 @@ router.patch("/:id/reopen", verifyUser, rolebasedAccess("ADMIN"), add, reopenRes
 router.patch("/:id/close", verifyUser, rolebasedAccess("ADMIN"), add, closeResolvedInquiry)
 router.patch("/assigned/:id/status", verifyUser, rolebasedAccess("EMPLOYEE"), add, changeAssignedInquiryStatus)
 router.get("/assigned/:id", verifyUser, rolebasedAccess("EMPLOYEE"), showAssignedInquiry)
-router.patch("/assigned/:id/status", verifyUser, rolebasedAccess("EMPLOYEE"), add, changeAssignedInquiryStatus)
 router.patch("/:id/assignment", verifyUser, rolebasedAccess("ADMIN"), add, updatedInquiryAssignment)
 router.get("/:id", verifyUser, rolebasedAccess("CUSTOMER"), getById)
 

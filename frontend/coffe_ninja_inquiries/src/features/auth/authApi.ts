@@ -28,6 +28,45 @@ type UserResponse = MessageResponse & {
   };
 };
 
+export type AdminCustomer = {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string | null;
+  isActive: boolean;
+  createdAt: string;
+};
+
+export type AdminEmployee = {
+  id: string;
+  fullName: string;
+  email: string;
+  isActive: boolean;
+  createdAt: string;
+};
+
+export type DirectoryPagination = {
+  page: number;
+  limit: number;
+  hasNextPage: boolean;
+};
+
+export type AdminDirectoryQuery = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  isActive?: "true" | "false";
+};
+
+function buildDirectoryParams(params: AdminDirectoryQuery) {
+  return {
+    ...(params.page ? { page: params.page } : {}),
+    ...(params.limit ? { limit: params.limit } : {}),
+    ...(params.search?.trim() ? { search: params.search.trim() } : {}),
+    ...(params.isActive ? { isActive: params.isActive } : {}),
+  };
+}
+
 export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     register: builder.mutation<UserResponse, RegisterInput>({
@@ -73,6 +112,57 @@ export const authApi = baseApi.injectEndpoints({
         dispatch(baseApi.util.resetApiState());
       },
     }),
+
+    getAllCustomers: builder.query<
+      { customers: AdminCustomer[]; pagination: DirectoryPagination },
+      AdminDirectoryQuery
+    >({
+      query: (params) => ({
+        url: "get-all-customers",
+        params: buildDirectoryParams(params),
+      }),
+      transformResponse: (
+        response: MessageResponse & {
+          data: { user: AdminCustomer[]; pagination: DirectoryPagination };
+        },
+      ) => ({
+        customers: response.data.user,
+        pagination: response.data.pagination,
+      }),
+      providesTags: ["AdminCustomer"],
+    }),
+
+    getAllEmployees: builder.query<
+      { employees: AdminEmployee[]; pagination: DirectoryPagination },
+      AdminDirectoryQuery
+    >({
+      query: (params) => ({
+        url: "get-all-employees",
+        params: buildDirectoryParams(params),
+      }),
+      transformResponse: (
+        response: MessageResponse & {
+          data: { employees: AdminEmployee[]; pagination: DirectoryPagination };
+        },
+      ) => response.data,
+      providesTags: ["AdminEmployee"],
+    }),
+
+    updateEmployeeStatus: builder.mutation<
+      AdminEmployee,
+      { id: string; isActive: boolean }
+    >({
+      query: ({ id, isActive }) => ({
+        url: `employees/${id}/status`,
+        method: "PATCH",
+        body: { isActive },
+      }),
+      transformResponse: (
+        response: MessageResponse & { data: { employee: AdminEmployee } },
+      ) => response.data.employee,
+      invalidatesTags: (_result, error) =>
+        error ? [] : ["AdminEmployee", "Inquiry"],
+    }),
   }),
 });
 
@@ -81,4 +171,7 @@ export const {
   useLoginMutation,
   useGetMeQuery,
   useLogoutMutation,
+  useGetAllCustomersQuery,
+  useGetAllEmployeesQuery,
+  useUpdateEmployeeStatusMutation,
 } = authApi;

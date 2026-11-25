@@ -7,6 +7,14 @@ export const baseApi = createApi({
     baseUrl: API_BASE_URL,
     credentials: API_CREDENTIALS,
   }),
-  tagTypes: ["CurrentUser", "Inquiry", "Notification", "Message", "Category"],
+  tagTypes: [
+    "CurrentUser",
+    "Inquiry",
+    "Notification",
+    "Message",
+    "Category",
+    "AdminCustomer",
+    "AdminEmployee",
+  ],
   endpoints: () => ({}),
 });
