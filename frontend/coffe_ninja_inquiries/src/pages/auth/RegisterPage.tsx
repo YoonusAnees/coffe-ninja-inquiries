@@ -1,4 +1,6 @@
 import { useState, type SyntheticEvent } from "react";
+import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
+import "react-phone-number-input/style.css";
 import { Link, useNavigate } from "react-router-dom";
 import coffeeNinjaLogo from "../../assets/coffee_ninja_logo.jpg";
 import { useRegisterMutation } from "../../features/auth/authApi";
@@ -17,6 +19,7 @@ function getErrorMessage(error: unknown): string {
 export default function RegisterPage() {
   const navigate = useNavigate();
   const [register, { isLoading }] = useRegisterMutation();
+  const [phone, setPhone] = useState<string | undefined>(undefined);
   const [errorMessage, setErrorMessage] = useState("");
 
   const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>) => {
@@ -26,11 +29,16 @@ export default function RegisterPage() {
     const formData = new FormData(e.currentTarget);
     const fullName = String(formData.get("fullName") ?? "").trim();
     const email = String(formData.get("email") ?? "").trim();
-    const phone = String(formData.get("phone") ?? "").trim();
+    const trimmedPhone = phone?.trim() ?? "";
     const password = String(formData.get("password") ?? "");
 
     if (!fullName || !email) {
       setErrorMessage("Enter your Full Name and Email");
+      return;
+    }
+
+    if (trimmedPhone && !isValidPhoneNumber(trimmedPhone)) {
+      setErrorMessage("Enter a valid phone number.");
       return;
     }
 
@@ -43,7 +51,7 @@ export default function RegisterPage() {
       await register({
         fullName,
         email,
-        ...(phone ? { phone } : {}),
+        ...(trimmedPhone ? { phone: trimmedPhone } : {}),
         password,
       }).unwrap();
       navigate("/login", { replace: true });
@@ -84,6 +92,7 @@ export default function RegisterPage() {
               maxLength={150}
               required
               className="cf-input mt-1"
+              placeholder="Enter Your Full Name"
             />
           </div>
 
@@ -101,6 +110,7 @@ export default function RegisterPage() {
               maxLength={254}
               required
               className="cf-input mt-1"
+              placeholder="Enter Your Email"
             />
           </div>
 
@@ -111,12 +121,14 @@ export default function RegisterPage() {
             >
               Phone (optional)
             </label>
-            <input
-              type="tel"
+            <PhoneInput
               id="phone"
-              name="phone"
-              minLength={10}
-              className="cf-input mt-1"
+              international
+              defaultCountry="LK"
+              value={phone}
+              onChange={setPhone}
+              className="cf-phone-input mt-1"
+              placeholder="Enter phone number"
             />
           </div>
 
@@ -133,8 +145,8 @@ export default function RegisterPage() {
               name="password"
               minLength={15}
               required
-              placeholder="Use at least 15 characters"
               className="cf-input mt-1"
+              placeholder="Enter Your Password"
             />
           </div>
 

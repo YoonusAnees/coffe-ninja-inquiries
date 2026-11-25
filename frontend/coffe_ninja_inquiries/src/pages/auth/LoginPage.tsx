@@ -63,6 +63,7 @@ export default function LoginPage() {
               maxLength={254}
               required
               className="cf-input mt-1"
+              placeholder="Enter Your Email"
             />
           </div>
 
@@ -80,6 +81,7 @@ export default function LoginPage() {
               autoComplete="current-password"
               required
               className="cf-input mt-1"
+              placeholder="Enter Your Password"
             />
           </div>
 

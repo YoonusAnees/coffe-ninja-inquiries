@@ -70,6 +70,26 @@
     background-size: 1rem 1rem;
   }
 
+  .cf-phone-input {
+    @apply flex w-full items-center gap-2 rounded-lg border border-[#315747] bg-[#071B14] px-3 py-2 text-[#F5FAF7] focus-within:border-[#6EE7A5];
+  }
+
+  .cf-phone-input .PhoneInputCountry {
+    @apply mr-1 flex items-center gap-1.5;
+  }
+
+  .cf-phone-input .PhoneInputCountrySelect {
+    @apply bg-[#0B241B] text-[#F5FAF7];
+  }
+
+  .cf-phone-input .PhoneInputCountrySelectArrow {
+    @apply border-[#BCD0C4] opacity-80;
+  }
+
+  .cf-phone-input .PhoneInputInput {
+    @apply min-w-0 flex-1 bg-transparent text-[#F5FAF7] placeholder-[#BCD0C4]/60 focus:outline-none;
+  }
+
   .cf-btn-primary {
     @apply inline-flex items-center justify-center rounded-lg bg-[#17603F] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#1E754E] disabled:cursor-not-allowed disabled:opacity-50;
   }
