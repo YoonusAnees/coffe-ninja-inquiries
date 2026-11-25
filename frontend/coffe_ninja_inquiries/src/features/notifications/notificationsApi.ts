@@ -15,6 +15,22 @@ type ApiResponse<T> = {
   data: T;
 };
 
+type NotificationsQueryArg = {
+  userId: string;
+  page?: number;
+  limit?: number;
+};
+
+type NotificationsPage = {
+  notifications: InboxNotification[];
+  pagination: {
+    page: number;
+    limit: number;
+    hasNextPage: boolean;
+  };
+  unreadCount: number;
+};
+
 type MarkReadInput = {
   notificationId: string;
   userId: string;
@@ -22,14 +38,16 @@ type MarkReadInput = {
 
 export const notificationsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getMyNotifications: builder.query<InboxNotification[], string>({
-      query: () => "notifications",
+    getMyNotifications: builder.query<NotificationsPage, NotificationsQueryArg>({
+      query: ({ page = 1, limit = 10 }) => ({
+        url: "notifications",
+        params: { page, limit },
+      }),
 
-      transformResponse: (
-        response: ApiResponse<{ notifications: InboxNotification[] }>,
-      ) => response.data.notifications,
+      transformResponse: (response: ApiResponse<NotificationsPage>) =>
+        response.data,
 
-      providesTags: (_result, _error, userId) => [
+      providesTags: (_result, _error, { userId }) => [
         { type: "Notification", id: userId },
       ],
     }),

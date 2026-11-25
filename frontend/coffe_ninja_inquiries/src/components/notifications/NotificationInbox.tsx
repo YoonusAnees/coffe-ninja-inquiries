@@ -101,15 +101,20 @@ export default function NotificationInbox({
   const [pageState, setPageState] = useState({ page: 1, limit });
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
+  const requestedPage = pageState.limit === limit ? pageState.page : 1;
+
   const {
-    currentData: notifications = [],
+    currentData,
     isLoading,
     isFetching,
     isError,
     refetch,
-  } = useGetMyNotificationsQuery(userId, {
-    refetchOnMountOrArgChange: true,
-  });
+  } = useGetMyNotificationsQuery(
+    { userId, page: requestedPage, limit },
+    {
+      refetchOnMountOrArgChange: true,
+    },
+  );
 
   const handleManualRefresh = async () => {
     if (isManualRefreshing) return;
@@ -121,19 +126,10 @@ export default function NotificationInbox({
     }
   };
 
-  const unreadCount = notifications.filter(
-    (item) => item.readAt === null,
-  ).length;
-
-  const totalPages = Math.max(1, Math.ceil(notifications.length / limit));
-  const requestedPage = pageState.limit === limit ? pageState.page : 1;
-  const page = Math.min(requestedPage, totalPages);
-  const startIndex = (page - 1) * limit;
-  const visibleNotifications = notifications.slice(
-    startIndex,
-    startIndex + limit,
-  );
-  const hasNextPage = page < totalPages;
+  const notifications = currentData?.notifications ?? [];
+  const unreadCount = currentData?.unreadCount ?? 0;
+  const page = currentData?.pagination.page ?? requestedPage;
+  const hasNextPage = currentData?.pagination.hasNextPage ?? false;
 
   return (
     <main className="mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col gap-4 px-4 pt-4 pb-2 sm:gap-5 sm:px-6 sm:pt-6 sm:pb-4">
@@ -189,7 +185,7 @@ export default function NotificationInbox({
       {!isLoading && !isError && notifications.length > 0 && (
         <div className="flex min-h-0 flex-1 flex-col justify-between gap-3 sm:gap-4">
           <ul className="space-y-2.5 sm:space-y-3">
-            {visibleNotifications.map((notification) => (
+            {notifications.map((notification) => (
               <NotificationRow
                 key={notification.id}
                 notification={notification}
@@ -198,7 +194,7 @@ export default function NotificationInbox({
             ))}
           </ul>
 
-          {totalPages > 1 && (
+          {(page > 1 || hasNextPage) && (
             <div className="shrink-0 pt-1">
               <PaginationControls
                 page={page}
