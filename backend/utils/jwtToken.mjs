@@ -6,7 +6,7 @@ import { signAuthToken } from "./token.mjs"
 export const authCookiesOptions = {
     httpOnly: true,
     secure: env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: env.NODE_ENV === "production" ? "none" : "lax",
     path: "/",
 }
 
