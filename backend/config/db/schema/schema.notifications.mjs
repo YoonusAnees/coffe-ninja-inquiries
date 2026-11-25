@@ -8,9 +8,11 @@ import {
 
 import { inquiries } from "./schema.inquiries.mjs";
 import { users } from "./schema.users.mjs";
-
+import { messages } from "./schema.messages.mjs";
 export const notificationTypeEnum = pgEnum("notification_type", [
     "INQUIRY_ASSIGNED",
+    "CUSTOMER_REPLIED",
+    "EMPLOYEE_REPLIED"
 ]);
 
 export const notifications = pgTable(
@@ -25,6 +27,8 @@ export const notifications = pgTable(
         inquiryId: uuid("inquiry_id")
             .notNull()
             .references(() => inquiries.id, { onDelete: "cascade" }),
+
+        messageId: uuid("message_id").references(() => messages.id, { onDelete: "cascade" }),
 
         type: notificationTypeEnum("type").notNull(),
 

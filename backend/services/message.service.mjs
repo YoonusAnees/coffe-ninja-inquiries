@@ -7,6 +7,8 @@ import { employee } from "../config/db/schema/schema.employees.mjs";
 import { users } from "../config/db/schema/schema.users.mjs";
 import AppError from "../utils/AppError.mjs";
 import { and, asc, eq, sql } from "drizzle-orm";
+import { notifications } from "../config/db/schema/schema.notifications.mjs";
+import { notifyEmployeeOfCustomerReply, notifyCustomerOfEmployeeReply } from "../config/notificationSocket.mjs";
 
 const inquiryIdSchema = z.string().uuid();
 
@@ -35,12 +37,17 @@ const createMessage = async ({
     visibility,
     body,
     replyToMessageId = null,
+    isCustomerReply = false,
 }) => {
     const id = inquiryIdSchema.parse(inquiryId);
 
-    return db.transaction(async (tx) => {
+    const result = await db.transaction(async (tx) => {
         const [inquiry] = await tx
-            .select({ status: inquiries.status })
+            .select({
+                status: inquiries.status,
+                customerId: inquiries.customerId,
+                assignedEmployeeId: inquiries.assignedEmployeeId,
+            })
             .from(inquiries)
             .where(and(eq(inquiries.id, id), eq(accessColumn, authorId)))
             .for("update");
@@ -50,15 +57,22 @@ const createMessage = async ({
         }
 
         if (inquiry.status === "CLOSED") {
-            const message = visibility === "INTERNAL"
-                ? "This inquiry is closed to new internal notes."
-                : "This inquiry is closed to new replies.";
+            const errorMessage =
+                visibility === "INTERNAL"
+                    ? "This inquiry is closed to new internal notes."
+                    : "This inquiry is closed to new replies.";
 
-            throw new AppError(message, 409);
+            throw new AppError(errorMessage, 409);
         }
 
-        if (accessColumn === inquiries.customerId && inquiry.status === "RESOLVED") {
-            throw new AppError("This inquiry is resolved and closed to new replies.", 409);
+        if (
+            accessColumn === inquiries.customerId &&
+            inquiry.status === "RESOLVED"
+        ) {
+            throw new AppError(
+                "This inquiry is resolved and closed to new replies.",
+                409,
+            );
         }
 
         if (replyToMessageId) {
@@ -66,12 +80,14 @@ const createMessage = async ({
                 .select({ id: messages.id })
                 .from(messages)
                 .innerJoin(users, eq(users.id, messages.authorId))
-                .where(and(
-                    eq(messages.id, replyToMessageId),
-                    eq(messages.inquiryId, id),
-                    eq(messages.visibility, "PUBLIC"),
-                    eq(users.role, "EMPLOYEE"),
-                ))
+                .where(
+                    and(
+                        eq(messages.id, replyToMessageId),
+                        eq(messages.inquiryId, id),
+                        eq(messages.visibility, "PUBLIC"),
+                        eq(users.role, "EMPLOYEE"),
+                    ),
+                )
                 .limit(1);
 
             if (!employeeMessage) {
@@ -84,6 +100,30 @@ const createMessage = async ({
             .values({ inquiryId: id, authorId, body, visibility, replyToMessageId })
             .returning({ id: messages.id });
 
+        let notification = null;
+
+        if (visibility === "PUBLIC") {
+            if (isCustomerReply && inquiry.assignedEmployeeId) {
+                notification = {
+                    recipientId: inquiry.assignedEmployeeId,
+                    type: "CUSTOMER_REPLIED",
+                };
+            } else if (!isCustomerReply) {
+                notification = {
+                    recipientId: inquiry.customerId,
+                    type: "EMPLOYEE_REPLIED",
+                };
+            }
+        }
+
+        if (notification) {
+            await tx.insert(notifications).values({
+                ...notification,
+                inquiryId: id,
+                messageId: inserted.id,
+            });
+        }
+
         const [createdMessage] = await tx
             .select(messageFields)
             .from(messages)
@@ -93,12 +133,25 @@ const createMessage = async ({
             .where(eq(messages.id, inserted.id))
             .limit(1);
 
-        return createdMessage;
+        return { message: createdMessage, notification };
     });
+
+    const { message, notification } = result;
+
+    if (notification) {
+        if (notification.type === "EMPLOYEE_REPLIED") {
+            notifyCustomerOfEmployeeReply(notification.recipientId);
+        } else {
+            notifyEmployeeOfCustomerReply(notification.recipientId);
+        }
+    }
+
+    return message;
 };
 
-export const customerSendMessage = (inquiryId, customerId, input) => {
-    const { body, replyToMessageId } = customerReplySchema.parse(input);
+
+export const customerSendMessage = (inquiryId, customerId, data) => {
+    const { body, replyToMessageId } = customerReplySchema.parse(data);
 
     return createMessage({
         inquiryId,
@@ -107,6 +160,7 @@ export const customerSendMessage = (inquiryId, customerId, input) => {
         visibility: "PUBLIC",
         body,
         replyToMessageId,
+        isCustomerReply: true,
     });
 };
 

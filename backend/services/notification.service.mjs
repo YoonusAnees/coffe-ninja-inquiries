@@ -11,6 +11,7 @@ const notificationFields = {
     id: notifications.id,
     type: notifications.type,
     inquiryId: notifications.inquiryId,
+    messageId: notifications.messageId,
     readAt: notifications.readAt,
     createdAt: notifications.createdAt,
 };

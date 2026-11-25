@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { io } from "socket.io-client";
 
 import { useGetMeQuery } from "../../features/auth/authApi";
 import {
@@ -14,9 +13,20 @@ type NotificationRowProps = {
   userId: string;
 };
 
+const notificationLabels: Record<InboxNotification["type"], string> = {
+  INQUIRY_ASSIGNED: "An inquiry was assigned to you",
+  CUSTOMER_REPLIED: "A customer replied to your inquiry",
+  EMPLOYEE_REPLIED: "Support replied to your inquiry",
+};
+
 function NotificationRow({ notification, userId }: NotificationRowProps) {
   const [markRead, request] = useMarkNotificationReadMutation();
   const isUnread = notification.readAt === null;
+
+  const inquiryPath =
+    notification.type === "EMPLOYEE_REPLIED"
+      ? `/inquiries/${encodeURIComponent(notification.inquiryId)}`
+      : `/employee/inquiries/${encodeURIComponent(notification.inquiryId)}`;
 
   const handleMarkRead = () => {
     void markRead({
@@ -28,7 +38,7 @@ function NotificationRow({ notification, userId }: NotificationRowProps) {
   return (
     <li className="space-y-2 rounded border p-4">
       <div className="flex items-center justify-between gap-3">
-        <p className="font-medium">An inquiry was assigned to you</p>
+        <p className="font-medium">{notificationLabels[notification.type]}</p>
         <span className="text-sm text-slate-600">
           {isUnread ? "Unread" : "Read"}
         </span>
@@ -42,10 +52,7 @@ function NotificationRow({ notification, userId }: NotificationRowProps) {
       </time>
 
       <div className="flex items-center gap-4">
-        <Link
-          className="underline"
-          to={`/employee/inquiries/${encodeURIComponent(notification.inquiryId)}`}
-        >
+        <Link className="underline" to={inquiryPath}>
           Open inquiry
         </Link>
 
@@ -70,7 +77,13 @@ function NotificationRow({ notification, userId }: NotificationRowProps) {
   );
 }
 
-function EmployeeInbox({ userId }: { userId: string }) {
+function Inbox({
+  userId,
+  customerView,
+}: {
+  userId: string;
+  customerView: boolean;
+}) {
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
   const {
@@ -81,28 +94,6 @@ function EmployeeInbox({ userId }: { userId: string }) {
   } = useGetMyNotificationsQuery(userId, {
     refetchOnMountOrArgChange: true,
   });
-
-  useEffect(() => {
-    const socket = io({
-      autoConnect: false,
-      transports: ["websocket"],
-    });
-
-    const refreshInbox = () => {
-      void refetch();
-    };
-
-    socket.on("notifications:ready", refreshInbox);
-    socket.on("notifications:changed", refreshInbox);
-
-    socket.connect();
-
-    return () => {
-      socket.off("notifications:ready", refreshInbox);
-      socket.off("notifications:changed", refreshInbox);
-      socket.disconnect();
-    };
-  }, [userId, refetch]);
 
   const handleManualRefresh = async () => {
     if (isManualRefreshing) return;
@@ -120,8 +111,11 @@ function EmployeeInbox({ userId }: { userId: string }) {
 
   return (
     <main className="mx-auto max-w-3xl space-y-5 px-6 py-8">
-      <Link className="underline" to="/employee/inquiries">
-        Back to assigned inquiries
+      <Link
+        className="underline"
+        to={customerView ? "/inquiries" : "/employee/inquiries"}
+      >
+        {customerView ? "Back to my inquiries" : "Back to assigned inquiries"}
       </Link>
 
       <header className="flex items-center justify-between gap-3">
@@ -191,5 +185,11 @@ export default function NotificationsPage() {
     );
   }
 
-  return <EmployeeInbox key={currentUser.id} userId={currentUser.id} />;
+  return (
+    <Inbox
+      key={currentUser.id}
+      userId={currentUser.id}
+      customerView={currentUser.role === "CUSTOMER"}
+    />
+  );
 }

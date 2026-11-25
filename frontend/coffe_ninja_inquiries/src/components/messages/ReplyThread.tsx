@@ -7,6 +7,7 @@ import {
 } from "../../features/messages/messagesApi";
 
 import PublicReplyForm from "./PublicReplyForm";
+import MarkVisibleRepliesRead from "../../pages/messages/MarkVisibleRepliesRead";
 
 type Props = {
   inquiryId: string;
@@ -172,6 +173,18 @@ export default function ReplyThread({
             );
           })}
         </ul>
+      )}
+
+      {thread.isSuccess && !thread.isError && (
+        <MarkVisibleRepliesRead
+          key={`${currentUserId}-${inquiryId}`}
+          inquiryId={inquiryId}
+          userId={currentUserId}
+          replies={messages}
+          notificationType={
+            viewer === "CUSTOMER" ? "EMPLOYEE_REPLIED" : "CUSTOMER_REPLIED"
+          }
+        />
       )}
     </section>
   );

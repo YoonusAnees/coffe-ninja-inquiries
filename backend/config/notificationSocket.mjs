@@ -7,40 +7,57 @@ import { env } from "./env.mjs";
 let io;
 
 const employeeRoom = (userId) => `employee:${userId}`;
+const customerRoom = (userId) => `customer:${userId}`;
 
 export const attachNotificationSocket = (httpServer) => {
-  io = new Server(httpServer, {
-    transports: ["websocket"],
+    io = new Server(httpServer, {
+        transports: ["websocket"],
 
-    allowRequest: (req, callback) => {
-      const allowedOrigin = new URL(env.FRONTEND_ORIGIN).origin;
-      callback(null, req.headers.origin === allowedOrigin);
-    },
-  });
+        allowRequest: (req, callback) => {
+            const allowedOrigin = new URL(env.FRONTEND_ORIGIN).origin;
+            callback(null, req.headers.origin === allowedOrigin);
+        },
+    });
 
-  io.engine.use(cookieParser());
-  io.engine.use(verifyUser);
+    io.engine.use(cookieParser());
+    io.engine.use(verifyUser);
 
-  io.use((socket, next) => {
-    const user = socket.request.user;
+    io.use((socket, next) => {
 
-    if (!user || user.role !== "EMPLOYEE") {
-      return next(new Error("Employee access required."));
-    }
+        const user = socket.request.user;
 
-    return next();
-  });
+        if (!user || !["CUSTOMER", "EMPLOYEE"].includes(user.role)) {
+            return next(new Error("A customer or employee account is required."));
+        }
 
-  io.on("connection", async (socket) => {
-    const userId = socket.request.user.id;
+        return next();
+    });
 
-    await socket.join(employeeRoom(userId));
-    socket.emit("notifications:ready");
-  });
+    io.on("connection", async (socket) => {
+        const user = socket.request.user;
+
+        const room = user.role === "CUSTOMER"
+            ? customerRoom(user.id)
+            : employeeRoom(user.id);
+        await socket.join(room)
+        socket.emit("notifications:ready");
+    });
 };
 
 export const notifyEmployeeInboxChanged = (employeeId) => {
-  if (io) {
-    io.to(employeeRoom(employeeId)).emit("notifications:changed");
-  }
+    if (io) {
+        io.to(employeeRoom(employeeId)).emit("notifications:changed");
+    }
+};
+
+export const notifyEmployeeOfCustomerReply = (employeeId) => {
+    if (io) {
+        io.to(employeeRoom(employeeId)).emit("customer-reply:created");
+    }
+};
+
+export const notifyCustomerOfEmployeeReply = (customerId) => {
+    if (io) {
+        io.to(customerRoom(customerId)).emit("employee-reply:created");
+    }
 };
