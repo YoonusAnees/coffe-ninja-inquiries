@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { db } from "../config/db/db.mjs";
 import { customer } from "../config/db/schema/schema.customers.mjs";
+import { employee } from "../config/db/schema/schema.employees.mjs";
 import { users } from "../config/db/schema/schema.users.mjs";
 import { comparePassword, hashPassword } from "../utils/password.mjs";
 import AppError from "../utils/AppError.mjs";
-import { asc, desc, eq } from "drizzle-orm"
+import { and, asc, desc, eq } from "drizzle-orm"
 import { APIHelper } from "../utils/apiHelper.mjs";
 import { paginationSchema } from "../utils/pagination.mjs";
 
@@ -146,30 +147,69 @@ export const listAllCustomers = async (queryString = {}) => {
 };
 
 
+const employeeStatusSchema = z.object({
+    isActive: z.boolean(),
+}).strict();
+
+const employeeIdSchema = z.string().uuid("Invalid employee ID.");
+
 export const listAllEmployee = async (queryString = {}) => {
     const params = listCustomersQuerySchema.parse(queryString);
     const query = db
         .select({
             id: users.id,
-            fullName: customer.fullName,
+            fullName: employee.fullName,
             email: users.email,
-            phone: customer.phone,
             isActive: users.isActive,
             createdAt: users.createdAt,
         })
-        .from(customer)
-        .innerJoin(users, eq(users.id, customer.userId))
+        .from(employee)
+        .innerJoin(users, eq(users.id, employee.userId))
         .orderBy(desc(users.createdAt), asc(users.id));
 
     const result = await new APIHelper(query, params, [
         eq(users.role, "EMPLOYEE"),
     ])
-        .search(customer.fullName)
+        .search(employee.fullName)
         .filter({ isActive: users.isActive })
         .pagination();
 
     return {
-        customers: result.rows,
+        employees: result.rows,
         pagination: result.pagination,
+    };
+};
+
+export const setEmployeeActiveStatus = async (employeeId, body) => {
+    const id = employeeIdSchema.parse(employeeId);
+    const { isActive } = employeeStatusSchema.parse(body);
+
+    const [updatedUser] = await db
+        .update(users)
+        .set({
+            isActive,
+            updatedAt: new Date(),
+        })
+        .where(and(eq(users.id, id), eq(users.role, "EMPLOYEE")))
+        .returning({
+            id: users.id,
+            email: users.email,
+            isActive: users.isActive,
+            createdAt: users.createdAt,
+        });
+
+    if (!updatedUser) {
+        throw new AppError("Employee not found.", 404);
+    }
+
+    const [profile] = await db
+        .select({ fullName: employee.fullName })
+        .from(employee)
+        .where(eq(employee.userId, id))
+        .limit(1);
+
+    return {
+        ...updatedUser,
+        fullName: profile?.fullName ?? "",
     };
 };

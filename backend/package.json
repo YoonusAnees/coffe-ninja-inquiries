@@ -6,7 +6,8 @@
   "type": "module",
  "scripts": {
     "start": "node server.mjs",
-    "dev": "nodemon server.mjs"
+    "dev": "nodemon server.mjs",
+    "test": "node --test tests/*.test.mjs"
   },
   "keywords": [],
   "author": "yoonus aness",

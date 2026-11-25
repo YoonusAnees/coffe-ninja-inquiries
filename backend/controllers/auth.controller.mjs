@@ -1,4 +1,4 @@
-import { registerUser, loginUser, getCurrentUser, listAllCustomers, } from "../services/auth.service.mjs";
+import { registerUser, loginUser, getCurrentUser, listAllCustomers, listAllEmployee, setEmployeeActiveStatus } from "../services/auth.service.mjs";
 import { authCookiesOptions, buildTokenCookie } from "../utils/jwtToken.mjs";
 import AppError from "../utils/AppError.mjs";
 
@@ -83,4 +83,35 @@ export const getAllCustomer = async (req, res, next) => {
         return next(error)
     }
 }
+
+export const getAllEmployee = async (req, res, next) => {
+    try {
+        const { employees, pagination } = await listAllEmployee(req.query);
+        res.set("Cache-Control", "no-store");
+
+        return res.status(200).json({
+            success: true,
+            message: "Employees Fetched",
+            data: { employees, pagination },
+        });
+    } catch (error) {
+        return next(error);
+    }
+};
+
+export const updateEmployeeStatus = async (req, res, next) => {
+    try {
+        const updatedEmployee = await setEmployeeActiveStatus(req.params.id, req.body);
+
+        return res.status(200).json({
+            success: true,
+            message: updatedEmployee.isActive
+                ? "Employee reactivated."
+                : "Employee deactivated.",
+            data: { employee: updatedEmployee },
+        });
+    } catch (error) {
+        return next(error);
+    }
+};
 
