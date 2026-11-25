@@ -1,0 +1,463 @@
+import { and, asc, desc, eq } from "drizzle-orm";
+import { db } from "../config/db/db.mjs"
+import { inquiries, inquiryPriorityEnum, inquiryStatusEnum } from "../config/db/schema/schema.inquiries.mjs";
+import { z } from "zod"
+import AppError from "../utils/AppError.mjs";
+import { customer } from "../config/db/schema/schema.customers.mjs";
+import { employee } from "../config/db/schema/schema.employees.mjs";
+import { users } from "../config/db/schema/schema.users.mjs";
+import { assignments } from "../config/db/schema/schema.assignments.mjs";
+import { statusHistory } from "../config/db/schema/schema.statusHistory.mjs";
+import { notifications } from "../config/db/schema/schema.notifications.mjs";
+import { notifyEmployeeInboxChanged } from "../config/notificationSocket.mjs";
+import { APIHelper } from "../utils/apiHelper.mjs";
+import { paginationSchema } from "../utils/pagination.mjs";
+
+
+
+const myInquiryQuerySchema = paginationSchema.extend({
+    search: z.string().trim().max(150).optional(),
+    status: z.enum(inquiryStatusEnum.enumValues).optional(),
+}).strict();
+
+const assignableEmployeeQuerySchema = paginationSchema.extend({
+    search: z.string().trim().max(150).optional(),
+}).strict();
+
+const assignedInquiryQuerySchema = paginationSchema.extend({
+    search: z.string().trim().max(150).optional(),
+    status: z.enum(inquiryStatusEnum.enumValues).optional(),
+    priority: z.enum(inquiryPriorityEnum.enumValues).optional(),
+}).strict();
+
+
+const createInquirySchema = z.object({
+    subject: z.string().trim().min(1).max(150),
+    description: z.string().trim().min(1).max(5000),
+}).strict();
+
+const assignInquirySchema = z.object({
+    employeeId: z.string().uuid(),
+    priority: z.enum(inquiryPriorityEnum.enumValues).optional(),
+    version: z.number().int().positive(),
+}).strict();
+
+const inquiryIdSchema = z.string().uuid();
+
+
+const employeeStatusSchema = z.object({
+    status: z.enum(["IN_PROGRESS", "WAITING_FOR_CUSTOMER", "RESOLVED"]),
+    version: z.number().int().positive(),
+}).strict();
+
+
+const resolvedActionSchema = z.object({
+    version: z.number().int().positive(),
+}).strict();
+
+const allowedEmployeeTransitions = {
+    ASSIGNED: ["IN_PROGRESS"],
+    IN_PROGRESS: ["WAITING_FOR_CUSTOMER", "RESOLVED"],
+    WAITING_FOR_CUSTOMER: ["IN_PROGRESS", "RESOLVED"],
+};
+
+
+const formatInquiry = ({ number, ...inquiryDetails }) => {
+    const year = inquiryDetails.createdAt.getUTCFullYear();
+    const paddedNumber = String(number).padStart(4, "0");
+
+    return {
+        ...inquiryDetails,
+        reference: `INQ-ID-${year}-${paddedNumber}`,
+    };
+};
+
+
+export const createInqury = async (customerId, data) => {
+
+    const { subject, description } = createInquirySchema.parse(data);
+
+    const [inquiry] = await db
+        .insert(inquiries)
+        .values({
+            customerId,
+            subject,
+            description
+        }).returning({
+            id: inquiries.id,
+            number: inquiries.number,
+            subject: inquiries.subject,
+            description: inquiries.description,
+            status: inquiries.status,
+            priority: inquiries.priority,
+            createdAt: inquiries.createdAt,
+        });
+
+    return formatInquiry(inquiry);
+
+};
+
+
+export const listMyInquiries = async (customerId, queryString = {}) => {
+    const params = myInquiryQuerySchema.parse(queryString);
+    const query = db
+        .select({
+            id: inquiries.id,
+            number: inquiries.number,
+            subject: inquiries.subject,
+            status: inquiries.status,
+            createdAt: inquiries.createdAt,
+        })
+        .from(inquiries)
+        .orderBy(desc(inquiries.createdAt), desc(inquiries.number));
+
+    const customerOwnsInquiry = eq(inquiries.customerId, customerId);
+
+    const result = await new APIHelper(query, params, [customerOwnsInquiry])
+        .search(inquiries.subject)
+        .filter({ status: inquiries.status })
+        .pagination();
+
+    return {
+        inquiries: result.rows.map(formatInquiry),
+        pagination: result.pagination,
+    };
+}
+
+export const getMyInquryById = async (customerId, dataId) => {
+
+    const inquiryId = inquiryIdSchema.parse(dataId);
+    const [inquiry] = await db
+        .select({
+            id: inquiries.id,
+            number: inquiries.number,
+            subject: inquiries.subject,
+            description: inquiries.description,
+            status: inquiries.status,
+            createdAt: inquiries.createdAt
+        })
+        .from(inquiries)
+        .where(
+            and(
+                eq(inquiries.id, inquiryId),
+                eq(inquiries.customerId, customerId),
+            )
+        ).limit(1);
+
+    if (!inquiry) {
+        throw new AppError("Inquiry not Found", 404)
+    }
+
+    return formatInquiry(inquiry)
+}
+
+export const inquriesAdmin = async () => {
+    const inquiry = await db
+        .select({
+            id: inquiries.id,
+            number: inquiries.number,
+            subject: inquiries.subject,
+            status: inquiries.status,
+            priority: inquiries.priority,
+            customerName: customer.fullName,
+            assignedEmployeeId: inquiries.assignedEmployeeId,
+            assignedEmployeeName: employee.fullName,
+            version: inquiries.version,
+            createdAt: inquiries.createdAt,
+        }).from(inquiries)
+        .innerJoin(customer, eq(customer.userId, inquiries.customerId))
+        .leftJoin(employee, eq(employee.userId, inquiries.assignedEmployeeId))
+        .orderBy(desc(inquiries.createdAt), desc(inquiries.number));
+    return inquiry.map(formatInquiry)
+}
+
+
+export const listAssignableEmployee = async (queryString = {}) => {
+    const params = assignableEmployeeQuerySchema.parse(queryString);
+    const query = db
+        .select({
+            id: users.id,
+            fullName: employee.fullName,
+            email: users.email
+        })
+        .from(employee)
+        .innerJoin(users, eq(users.id, employee.userId))
+        .orderBy(asc(employee.fullName), asc(users.id));
+
+    const result = await new APIHelper(query, params, [
+        eq(users.role, "EMPLOYEE"),
+        eq(users.isActive, true),
+    ])
+        .search(employee.fullName)
+        .pagination();
+
+    return {
+        employees: result.rows,
+        pagination: result.pagination,
+    };
+}
+
+
+export const assignInquiry = async (inquiryId, adminId, data) => {
+    const id = inquiryIdSchema.parse(inquiryId);
+    const { employeeId, priority, version } = assignInquirySchema.parse(data);
+    let notificationRecipientId = null;
+
+    const result = await db.transaction(async (t) => {
+        const [inquiry] = await t
+            .select()
+            .from(inquiries)
+            .where(eq(inquiries.id, id))
+            .for("update");
+
+        if (!inquiry) {
+            throw new AppError("Inquiry not Found", 404);
+        }
+
+        if (inquiry.version !== version) {
+            throw new AppError("This Inquiry was updated", 409);
+        }
+
+        if (inquiry.status === "RESOLVED") {
+            throw new AppError("Inquiry Resolved", 409);
+        }
+
+        if (inquiry.status === "CLOSED") {
+            throw new AppError("Inquiry CLOSED", 409);
+        }
+
+        const [assignee] = await t
+            .select({
+                role: users.role,
+                isActive: users.isActive,
+            })
+            .from(employee)
+            .innerJoin(users, eq(users.id, employee.userId))
+            .where(eq(employee.userId, employeeId))
+            .for("share");
+
+        if (!assignee || assignee.role !== "EMPLOYEE" || !assignee.isActive) {
+            throw new AppError("Not an Employee", 400);
+        }
+
+        const employeeChanged = inquiry.assignedEmployeeId !== employeeId;
+        const nextPriority = priority === undefined ? inquiry.priority : priority;
+        const nextStatus = inquiry.status === "NEW" ? "ASSIGNED" : inquiry.status;
+        const statusChanged = nextStatus !== inquiry.status;
+
+        if (!employeeChanged && !statusChanged && nextPriority === inquiry.priority) {
+            return formatInquiry(inquiry);
+        }
+
+        const [updatedInquiry] = await t
+            .update(inquiries)
+            .set({
+                assignedEmployeeId: employeeId,
+                priority: nextPriority,
+                status: nextStatus,
+                version: inquiry.version + 1,
+                updatedAt: new Date(),
+            })
+            .where(eq(inquiries.id, id))
+            .returning();
+
+        if (employeeChanged) {
+            await t.insert(assignments).values({
+                inquiryId: id,
+                employeeId,
+                assignedBy: adminId,
+            });
+
+            await t.insert(notifications).values({
+                recipientId: employeeId,
+                inquiryId: id,
+                type: "INQUIRY_ASSIGNED",
+            });
+
+            notificationRecipientId = employeeId;
+        }
+
+        if (statusChanged) {
+            await t.insert(statusHistory).values({
+                inquiryId: id,
+                changedBy: adminId,
+                fromStatus: inquiry.status,
+                toStatus: nextStatus,
+            });
+        }
+
+        return formatInquiry(updatedInquiry);
+    });
+
+    if (notificationRecipientId) {
+        notifyEmployeeInboxChanged(notificationRecipientId);
+    }
+
+    return result;
+};
+
+
+export const getAssignedInquires = async (employeeId, queryString = {}) => {
+    const params = assignedInquiryQuerySchema.parse(queryString);
+    const query = db
+        .select({
+            id: inquiries.id,
+            number: inquiries.number,
+            subject: inquiries.subject,
+            status: inquiries.status,
+            priority: inquiries.priority,
+            createdAt: inquiries.createdAt
+        })
+        .from(inquiries)
+        .orderBy(desc(inquiries.createdAt), desc(inquiries.number));
+
+    const result = await new APIHelper(query, params, [
+        eq(inquiries.assignedEmployeeId, employeeId),
+    ])
+        .search(inquiries.subject)
+        .filter({
+            status: inquiries.status,
+            priority: inquiries.priority,
+        })
+        .pagination();
+
+    return {
+        inquiries: result.rows.map(formatInquiry),
+        pagination: result.pagination,
+    };
+}
+
+export const getAssignedInquiry = async (inquiryId, employeeId) => {
+    const id = inquiryIdSchema.parse(inquiryId);
+    const [inquiry] = await db
+        .select({
+            id: inquiries.id,
+            number: inquiries.number,
+            subject: inquiries.subject,
+            description: inquiries.description,
+            status: inquiries.status,
+            priority: inquiries.priority,
+            version: inquiries.version,
+            createdAt: inquiries.createdAt
+
+        }).from(inquiries)
+        .where(
+            and(eq(inquiries.id, id),
+                eq(inquiries.assignedEmployeeId, employeeId)
+            )
+        ).limit(1);
+
+    if (!inquiry) {
+        throw new AppError("Inquiry not found", 404);
+    }
+
+    return formatInquiry(inquiry)
+}
+
+export const updateAssignedInquiryStatus = async (inquiryId, employeeId, data) => {
+    const id = inquiryIdSchema.parse(inquiryId);
+    const { status, version } = employeeStatusSchema.parse(data);
+
+    return db.transaction(async (t) => {
+        const [inquiry] = await t
+            .select()
+            .from(inquiries)
+            .where(
+                and(
+                    eq(inquiries.id, id),
+                    eq(inquiries.assignedEmployeeId, employeeId),
+                ),
+            )
+            .for("update");
+
+        if (!inquiry) {
+            throw new AppError("Inquiry not found.", 404);
+        }
+
+        if (inquiry.version !== version) {
+            throw new AppError("This inquiry was updated. Refresh and try again.", 409);
+        }
+
+        const allowedNext = allowedEmployeeTransitions[inquiry.status] ?? [];
+        if (!allowedNext.includes(status)) {
+            throw new AppError("This status change is not allowed.", 409);
+        }
+
+        const [updatedInquiry] = await t
+            .update(inquiries)
+            .set({
+                status,
+                version: inquiry.version + 1,
+                updatedAt: new Date(),
+            })
+            .where(eq(inquiries.id, id))
+            .returning();
+
+        await t.insert(statusHistory).values({
+            inquiryId: id,
+            changedBy: employeeId,
+            fromStatus: inquiry.status,
+            toStatus: status,
+        });
+
+        return formatInquiry(updatedInquiry);
+    });
+};
+
+const changeResolvedInquiryStatus = async (inquiryId, admin, data, nextStatus) => {
+    if (admin.role !== "ADMIN") {
+        throw new AppError("Only admins can reopen or close inquiries.", 403);
+    }
+
+    const id = inquiryIdSchema.parse(inquiryId);
+    const { version } = resolvedActionSchema.parse(data);
+
+    return db.transaction(async (tx) => {
+        const [inquiry] = await tx
+            .select({
+                status: inquiries.status,
+                version: inquiries.version,
+            })
+            .from(inquiries)
+            .where(eq(inquiries.id, id))
+            .for("update");
+
+        if (!inquiry) {
+            throw new AppError("Inquiry not found.", 404);
+        }
+
+        if (inquiry.version !== version) {
+            throw new AppError("This inquiry was updated. Refresh and try again.", 409);
+        }
+
+        if (inquiry.status !== "RESOLVED") {
+            throw new AppError("This action requires a resolved inquiry.", 409);
+        }
+
+        const [updatedInquiry] = await tx
+            .update(inquiries)
+            .set({
+                status: nextStatus,
+                version: inquiry.version + 1,
+                updatedAt: new Date(),
+            })
+            .where(eq(inquiries.id, id))
+            .returning();
+
+        await tx.insert(statusHistory).values({
+            inquiryId: id,
+            changedBy: admin.id,
+            fromStatus: inquiry.status,
+            toStatus: updatedInquiry.status,
+        });
+
+        return formatInquiry(updatedInquiry);
+    });
+};
+
+export const reopenInquiry = (inquiryId, admin, data) =>
+    changeResolvedInquiryStatus(inquiryId, admin, data, "IN_PROGRESS");
+
+export const closeInquiry = (inquiryId, admin, data) =>
+    changeResolvedInquiryStatus(inquiryId, admin, data, "CLOSED");
+

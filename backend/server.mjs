@@ -1,10 +1,13 @@
 import app from "./app.mjs";
-import dotenv from "dotenv";
-
-dotenv.config({path:'./config/config.env'})
+import { createServer } from "node:http";
+import { attachNotificationSocket } from "./config/notificationSocket.mjs";
 const PORT = process.env.PORT || 8000;
 
-app.listen(PORT,()=>{
+const httpServer = createServer(app);
+
+attachNotificationSocket(httpServer);
+
+httpServer.listen(PORT, () => {
     console.log(`Server is Running On Port ${PORT}`)
 });
 
