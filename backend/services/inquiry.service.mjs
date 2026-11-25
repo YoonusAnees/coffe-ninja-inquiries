@@ -100,7 +100,7 @@ export const createInqury = async (customerId, data) => {
 
 export const listMyInquiries = async (customerId, queryString = {}) => {
     const params = myInquiryQuerySchema.parse(queryString);
-    const inquiry = await db
+    const query = db
         .select({
             id: inquiries.id,
             number: inquiries.number,
@@ -109,7 +109,6 @@ export const listMyInquiries = async (customerId, queryString = {}) => {
             createdAt: inquiries.createdAt,
         })
         .from(inquiries)
-        .where(eq(inquiries.customerId, customerId))
         .orderBy(desc(inquiries.createdAt), desc(inquiries.number));
 
     const customerOwnsInquiry = eq(inquiries.customerId, customerId);

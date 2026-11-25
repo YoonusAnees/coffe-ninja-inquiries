@@ -8,10 +8,11 @@ import messageRoute from "./routes/message.routes.mjs";
 import notificationRoute from "./routes/notification.routes.mjs";
 import reportRoute from "./routes/report.routes.mjs";
 
-app.use("/api", apiLimiter);
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
+app.use("/api", apiLimiter);
+
 
 
 

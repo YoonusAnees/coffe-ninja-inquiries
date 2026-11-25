@@ -17,12 +17,12 @@ export const submitInquiry = async (req, res, next) => {
 
 export const getMyInquiries = async (req, res, next) => {
     try {
-        const inquiries = await listMyInquiries(req.user.id);
+        const { inquiries, pagination } = await listMyInquiries(req.user.id, req.query);
         res.set("Cache-Control", "no-store");
         return res.status(200).json({
             success: true,
             message: "Inquiries fetched",
-            data: { inquiries },
+            data: { inquiries, pagination },
         });
 
     } catch (error) {

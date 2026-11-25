@@ -35,3 +35,15 @@ export const registerLimiter = rateLimit({
         message: "Too many registration requests. Please try again later.",
     },
 });
+
+export const add = rateLimit({
+    windowMs: 60 * minute,
+    limit: 5,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    message: {
+        success: false,
+        message: "Too many requests One Submitting.",
+    },
+});
+
