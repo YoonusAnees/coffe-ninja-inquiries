@@ -10,6 +10,7 @@ type Props = {
   inquiryId: string;
   userId: string;
   replies: PublicReply[];
+  notificationType: "CUSTOMER_REPLIED" | "EMPLOYEE_REPLIED";
 };
 
 export default function MarkVisibleRepliesRead({

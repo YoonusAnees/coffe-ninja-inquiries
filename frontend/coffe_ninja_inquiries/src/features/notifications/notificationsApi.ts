@@ -2,7 +2,7 @@ import { baseApi } from "../../app/baseApi";
 
 export type InboxNotification = {
   id: string;
-  type: "INQUIRY_ASSIGNED" | "CUSTOMER_REPLIED";
+  type: "INQUIRY_ASSIGNED" | "CUSTOMER_REPLIED" |"EMPLOYEE_REPLIED";
   inquiryId: string;
   messageId: string | null;
   readAt: string | null;

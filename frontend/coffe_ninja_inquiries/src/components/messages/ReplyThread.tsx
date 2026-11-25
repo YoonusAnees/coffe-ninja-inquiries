@@ -175,12 +175,15 @@ export default function ReplyThread({
         </ul>
       )}
 
-      {viewer === "EMPLOYEE" && thread.isSuccess && !thread.isError && (
+      {thread.isSuccess && !thread.isError && (
         <MarkVisibleRepliesRead
           key={`${currentUserId}-${inquiryId}`}
           inquiryId={inquiryId}
           userId={currentUserId}
           replies={messages}
+          notificationType={
+            viewer === "CUSTOMER" ? "EMPLOYEE_REPLIED" : "CUSTOMER_REPLIED"
+          }
         />
       )}
     </section>

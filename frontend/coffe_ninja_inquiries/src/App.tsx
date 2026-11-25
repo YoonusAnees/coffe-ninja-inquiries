@@ -3,6 +3,7 @@ import "./App.css";
 import LoginPage from "./pages/auth/LoginPage";
 import AccountPage from "./pages/auth/AccountPage";
 import RegisterPage from "./pages/auth/RegisterPage";
+import CustomerLayout from "./pages/customer/CustomerLayout";
 import MyInquiriesPage from "./pages/customer/MyInquiriesPage";
 import NewInquiryPage from "./pages/customer/NewInquiryPage";
 import InquiryDetailsPage from "./pages/customer/InquiryDetailsPage";
@@ -20,15 +21,15 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/account" element={<AccountPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/inquiries" element={<MyInquiriesPage />} />
-        <Route path="/inquiries/new" element={<NewInquiryPage />} />
-        <Route path="/inquiries/:id" element={<InquiryDetailsPage />} />
-        <Route path="/admin/inquiries" element={<AdminInquiriesPage />} />
 
-        <Route
-          path="/notifications"
-          element={<Navigate to="/employee/notifications" replace />}
-        />
+        <Route element={<CustomerLayout />}>
+          <Route path="/inquiries" element={<MyInquiriesPage />} />
+          <Route path="/inquiries/new" element={<NewInquiryPage />} />
+          <Route path="/inquiries/:id" element={<InquiryDetailsPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
+        </Route>
+
+        <Route path="/admin/inquiries" element={<AdminInquiriesPage />} />
 
         <Route path="/employee" element={<EmployeeLayout />}>
           <Route path="inquiries" element={<AssignedInquiriesPage />} />
