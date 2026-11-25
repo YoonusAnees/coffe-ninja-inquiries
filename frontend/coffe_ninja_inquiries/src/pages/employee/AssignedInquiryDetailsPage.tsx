@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import PublicReplyForm from "../../components/messages/PublicReplyForm";
+import ReplyThread from "../../components/messages/ReplyThread";
+import { DetailsSkeleton } from "../../components/ui/LoadingState";
+import { PriorityBadge, StatusBadge } from "../../components/ui/StatusBadge";
+import { useGetMeQuery } from "../../features/auth/authApi";
 import {
   useGetAssignedInquiryQuery,
   useUpdateAssignedStatusMutation,
   type EmployeeNextStatus,
   type InquiryStatus,
 } from "../../features/inquiries/inquiriesApi";
-import PublicReplyForm from "../../components/messages/PublicReplyForm";
-import ReplyThread from "../../components/messages/ReplyThread";
-import { useGetMeQuery } from "../../features/auth/authApi";
 import EmployeeNotes from "./EmployeeNotes";
 
 type StatusAction = {
@@ -113,15 +115,18 @@ export default function AssignedInquiryDetailsPage() {
   };
 
   return (
-    <main className="mx-auto max-w-3xl space-y-4 px-6 py-8">
+    <main className="mx-auto w-full max-w-3xl space-y-5 px-4 py-6 sm:px-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <Link className="underline" to="/employee/inquiries">
+        <Link
+          className="text-sm font-medium text-[#6EE7A5] underline-offset-4 hover:underline"
+          to="/employee/inquiries"
+        >
           Back to assigned inquiries
         </Link>
 
         <button
           type="button"
-          className="rounded border px-3 py-1.5 disabled:opacity-50"
+          className="cf-btn-secondary"
           disabled={isManualRefreshing || !id}
           onClick={() => void handleManualRefresh()}
         >
@@ -129,13 +134,15 @@ export default function AssignedInquiryDetailsPage() {
         </button>
       </header>
 
-      {isInitialLoading && <p role="status">Checking inquiry access…</p>}
+      {isInitialLoading && <DetailsSkeleton />}
 
       {isError && !isInitialLoading && (
-        <div>
-          <p role="alert">Could not open this inquiry.</p>
+        <div className="cf-card space-y-3">
+          <p role="alert" className="text-sm text-rose-200">
+            Could not open this inquiry.
+          </p>
           <button
-            className="underline"
+            className="cf-btn-secondary"
             type="button"
             onClick={() => void handleManualRefresh()}
           >
@@ -145,17 +152,29 @@ export default function AssignedInquiryDetailsPage() {
       )}
 
       {inquiry && !isInitialLoading && !isError && (
-        <article className="space-y-3 rounded border p-4">
-          <p className="text-sm text-slate-600">{inquiry.reference}</p>
-          <h1 className="text-2xl font-semibold">{inquiry.subject}</h1>
-          <p className="text-sm">
-            {inquiry.status.replace(/_/g, " ")} · {inquiry.priority} priority
+        <article className="cf-card space-y-5">
+          <header className="space-y-2 border-b border-[#315747] pb-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-medium text-[#BCD0C4]">
+                {inquiry.reference}
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <PriorityBadge priority={inquiry.priority} />
+                <StatusBadge status={inquiry.status} />
+              </div>
+            </div>
+            <h1 className="break-words text-2xl font-semibold text-[#F5FAF7]">
+              {inquiry.subject}
+            </h1>
+          </header>
+
+          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-[#F5FAF7]">
+            {inquiry.description}
           </p>
-          <p className="whitespace-pre-wrap">{inquiry.description}</p>
 
           {availableActions.length > 0 && (
             <div
-              className="flex flex-wrap gap-2"
+              className="flex flex-wrap items-center gap-2 border-t border-[#315747] pt-4"
               role="group"
               aria-label="Inquiry status actions"
             >
@@ -163,7 +182,7 @@ export default function AssignedInquiryDetailsPage() {
                 <button
                   key={action.status}
                   type="button"
-                  className="rounded border px-4 py-2 disabled:opacity-50"
+                  className="cf-btn-secondary"
                   disabled={
                     statusUpdate.isLoading || isFetching || Boolean(hasConflict)
                   }
@@ -173,18 +192,22 @@ export default function AssignedInquiryDetailsPage() {
                 </button>
               ))}
 
-              {statusUpdate.isLoading && <p role="status">Updating status…</p>}
+              {statusUpdate.isLoading && (
+                <p role="status" className="text-sm text-[#BCD0C4]">
+                  Updating status…
+                </p>
+              )}
             </div>
           )}
 
           {hasConflict && (
-            <div>
-              <p role="alert">
+            <div className="space-y-2 rounded-lg border border-amber-400/50 bg-amber-950/40 p-3">
+              <p role="alert" className="text-sm text-amber-200">
                 Refresh the inquiry and review its current status.
               </p>
               <button
                 type="button"
-                className="underline"
+                className="cf-btn-secondary"
                 disabled={isManualRefreshing}
                 onClick={() => void refreshAfterConflict()}
               >
@@ -194,7 +217,9 @@ export default function AssignedInquiryDetailsPage() {
           )}
 
           {statusUpdate.isError && !hasConflict && (
-            <p role="alert">Could not update the inquiry status.</p>
+            <p role="alert" className="text-sm text-rose-300">
+              Could not update the inquiry status.
+            </p>
           )}
 
           {currentUser && (

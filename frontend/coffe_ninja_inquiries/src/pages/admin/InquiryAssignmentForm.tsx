@@ -1,11 +1,10 @@
-import { useState } from "react";
-import type { FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 
 import {
   inquiryPriorities,
   useAssignInquiryMutation,
+  type InquiryAssignment,
 } from "../../features/inquiries/inquiriesApi";
-import type { InquiryAssignment } from "../../features/inquiries/inquiriesApi";
 
 type AssignableEmployee = {
   id: string;
@@ -74,16 +73,20 @@ export default function InquiryAssignmentForm({
   };
 
   if (!canAssign) {
-    return <p>Only open inquiries can be assigned.</p>;
+    return (
+      <p className="text-sm text-[#BCD0C4]">
+        Only open inquiries can be assigned.
+      </p>
+    );
   }
 
   return (
-    <form className="space-y-4" onSubmit={handleSubmit}>
+    <form className="space-y-4 border-t border-[#315747] pt-4" onSubmit={handleSubmit}>
       <fieldset className="space-y-4" disabled={isLoading || hasConflict}>
-        <label className="block">
-          Employee
+        <label className="block space-y-1 text-sm font-medium text-[#BCD0C4]">
+          <span>Employee</span>
           <select
-            className="mt-1 block w-full rounded border p-2"
+            className="cf-input"
             value={hasSelectedEmployee ? employeeId : ""}
             onChange={(event) => setEmployeeId(event.target.value)}
             required
@@ -97,10 +100,10 @@ export default function InquiryAssignmentForm({
           </select>
         </label>
 
-        <label className="block">
-          Priority
+        <label className="block space-y-1 text-sm font-medium text-[#BCD0C4]">
+          <span>Priority</span>
           <select
-            className="mt-1 block w-full rounded border p-2"
+            className="cf-input"
             value={priority}
             onChange={(event) => {
               const selected = inquiryPriorities.find(
@@ -118,7 +121,7 @@ export default function InquiryAssignmentForm({
         </label>
 
         <button
-          className="rounded bg-slate-900 px-4 py-2 text-white disabled:opacity-50"
+          className="cf-btn-primary"
           type="submit"
           disabled={!hasSelectedEmployee}
         >
@@ -130,10 +133,18 @@ export default function InquiryAssignmentForm({
         </button>
       </fieldset>
 
-      {message && <p role="status">{message}</p>}
+      {message && (
+        <p role="status" className="text-sm text-[#6EE7A5]">
+          {message}
+        </p>
+      )}
 
       {hasConflict && (
-        <button className="underline" type="button" onClick={onRefresh}>
+        <button
+          className="cf-btn-secondary"
+          type="button"
+          onClick={onRefresh}
+        >
           Refresh inquiry
         </button>
       )}

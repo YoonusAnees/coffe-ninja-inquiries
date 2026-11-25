@@ -88,17 +88,17 @@ export default function PublicReplyForm({
 
   return (
     <form
-      className="space-y-3 border-t pt-4"
+      className="space-y-3 border-t border-[#315747] pt-4"
       onSubmit={handleSubmit}
       onChange={() => {
         setSent(false);
         setErrorMessage("");
       }}
     >
-      <label className="block font-medium">
-        {replyToMessageId ? "Reply to this message" : "Public reply"}
+      <label className="block space-y-1 text-sm font-medium text-[#BCD0C4]">
+        <span>{replyToMessageId ? "Reply to this message" : "Public reply"}</span>
         <textarea
-          className="mt-1 block w-full rounded border p-2"
+          className="cf-input"
           rows={4}
           maxLength={5000}
           value={body}
@@ -108,30 +108,38 @@ export default function PublicReplyForm({
         />
       </label>
 
-      <label className="block">
-        Attachment (optional)
+      <label className="block space-y-1 text-sm font-medium text-[#BCD0C4]">
+        <span>Attachment (optional)</span>
         <input
-          className="mt-1 block w-full text-sm"
+          className="block w-full text-sm text-[#BCD0C4] file:mr-3 file:rounded-lg file:border file:border-[#315747] file:bg-[#0B241B] file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-[#F5FAF7] hover:file:bg-[#143D2E]"
           type="file"
           name="attachment"
           accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
           disabled={isSending}
         />
-        <span className="mt-1 block text-sm text-slate-600">
+        <span className="block text-xs text-[#BCD0C4]">
           PDF, PNG, or JPEG · Up to 5 MiB
         </span>
       </label>
 
       <button
-        className="rounded bg-slate-900 px-4 py-2 text-white disabled:opacity-50"
+        className="cf-btn-primary"
         type="submit"
         disabled={isSending || !body.trim()}
       >
         {isSending ? "Sending…" : "Send reply"}
       </button>
 
-      {errorMessage && <p role="alert">{errorMessage}</p>}
-      {sent && <p role="status">Reply sent.</p>}
+      {errorMessage && (
+        <p role="alert" className="text-sm text-rose-300">
+          {errorMessage}
+        </p>
+      )}
+      {sent && (
+        <p role="status" className="text-sm text-[#6EE7A5]">
+          Reply sent.
+        </p>
+      )}
     </form>
   );
 }

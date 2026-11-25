@@ -17,12 +17,12 @@ export const submitInquiry = async (req, res, next) => {
 
 export const getMyInquiries = async (req, res, next) => {
     try {
-        const inquiries = await listMyInquiries(req.user.id);
+        const { inquiries, pagination } = await listMyInquiries(req.user.id, req.query);
         res.set("Cache-Control", "no-store");
         return res.status(200).json({
             success: true,
             message: "Inquiries fetched",
-            data: { inquiries },
+            data: { inquiries, pagination },
         });
 
     } catch (error) {
@@ -64,14 +64,14 @@ export const getAdminInquiries = async (req, res, next) => {
 
 export const getAssinableEmployees = async (req, res, next) => {
     try {
-        const employees = await listAssignableEmployee();
+        const { employees, pagination } = await listAssignableEmployee(req.query);
         res.set("Cache-Control", "no-store");
 
 
         return res.status(200).json({
             success: true,
             message: employees.length === 0 ? "No employee found" : "Employees fetched",
-            data: { employees }
+            data: { employees, pagination }
         })
 
     } catch (error) {
@@ -96,11 +96,11 @@ export const updatedInquiryAssignment = async (req, res, next) => {
 export const listAssignedInquires = async (req, res, next) => {
 
     try {
-        const inquiries = await getAssignedInquires(req.user.id)
+        const { inquiries, pagination } = await getAssignedInquires(req.user.id, req.query)
         return res.status(200).json({
             success: true,
             messsage: "Assigned inquires fetched",
-            data: { inquiries }
+            data: { inquiries, pagination }
         })
 
     } catch (error) {

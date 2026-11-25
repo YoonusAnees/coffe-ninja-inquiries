@@ -7,6 +7,7 @@ import {
 } from "../../features/messages/messagesApi";
 
 import PublicReplyForm from "./PublicReplyForm";
+import { ThreadSkeleton } from "../ui/LoadingState";
 import MarkVisibleRepliesRead from "../../pages/messages/MarkVisibleRepliesRead";
 
 type Props = {
@@ -120,13 +121,13 @@ export default function ReplyThread({
   }
 
   return (
-    <section className="space-y-4 border-t pt-4">
+    <section className="space-y-4 border-t border-[#315747] pt-4">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">Conversation</h2>
+        <h2 className="text-lg font-semibold text-[#F5FAF7]">Conversation</h2>
 
         <button
           type="button"
-          className="rounded border px-3 py-1 disabled:opacity-50"
+          className="cf-btn-secondary text-xs"
           disabled={isManualRefreshing}
           onClick={() => void handleManualRefresh()}
         >
@@ -134,17 +135,23 @@ export default function ReplyThread({
         </button>
       </div>
 
-      {thread.isLoading && <p role="status">Loading conversation…</p>}
+      {thread.isLoading && <ThreadSkeleton />}
 
-      {thread.isError && <p role="alert">Could not load the conversation.</p>}
+      {thread.isError && (
+        <p role="alert" className="text-sm text-rose-200">
+          Could not load the conversation.
+        </p>
+      )}
 
       {downloadError && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-rose-300">
           {downloadError}
         </p>
       )}
 
-      {thread.isSuccess && messages.length === 0 && <p>No messages yet.</p>}
+      {thread.isSuccess && messages.length === 0 && (
+        <p className="text-sm text-[#BCD0C4]">No messages yet.</p>
+      )}
 
       {!thread.isError && (
         <ul className="space-y-4">
@@ -155,17 +162,22 @@ export default function ReplyThread({
             const showReplyButton = isCustomer && canReply && !isMine;
 
             return (
-              <li key={message.id} className="space-y-3 rounded border p-4">
+              <li
+                key={message.id}
+                className="space-y-3 rounded-xl border border-[#315747] bg-[#0B241B] p-4"
+              >
                 <div>
-                  <p className="text-sm font-semibold">
+                  <p className="text-xs font-semibold text-[#6EE7A5]">
                     {formatAuthorLabel(message, currentUserId)}
                   </p>
-                  <p className="whitespace-pre-wrap">{message.body}</p>
+                  <p className="mt-1 whitespace-pre-wrap break-words text-sm text-[#F5FAF7]">
+                    {message.body}
+                  </p>
 
                   {message.attachment && (
                     <button
                       type="button"
-                      className="mt-2 inline-block break-all text-sm font-medium text-blue-700 underline"
+                      className="mt-2 inline-block break-all text-left text-sm font-medium text-[#6EE7A5] underline-offset-4 hover:underline"
                       onClick={() =>
                         void handleDownloadAttachment(message.attachment!)
                       }
@@ -175,7 +187,7 @@ export default function ReplyThread({
                   )}
 
                   <time
-                    className="mt-1 block text-xs text-slate-600"
+                    className="mt-1.5 block text-xs text-[#BCD0C4]"
                     dateTime={message.createdAt}
                   >
                     {new Date(message.createdAt).toLocaleString()}
@@ -185,19 +197,24 @@ export default function ReplyThread({
                 {replies.length > 0 && (
                   <ul
                     aria-label="Replies to this message"
-                    className="ml-3 space-y-3 border-l-2 border-slate-300 pl-4"
+                    className="ml-3 space-y-3 border-l-2 border-[#315747] pl-4"
                   >
                     {replies.map((reply) => (
-                      <li key={reply.id} className="rounded bg-slate-50 p-3">
-                        <p className="text-sm font-semibold">
+                      <li
+                        key={reply.id}
+                        className="rounded-lg border border-[#315747]/70 bg-[#071B14] p-3"
+                      >
+                        <p className="text-xs font-semibold text-[#6EE7A5]">
                           {formatAuthorLabel(reply, currentUserId)}
                         </p>
-                        <p className="whitespace-pre-wrap">{reply.body}</p>
+                        <p className="mt-1 whitespace-pre-wrap break-words text-sm text-[#F5FAF7]">
+                          {reply.body}
+                        </p>
 
                         {reply.attachment && (
                           <button
                             type="button"
-                            className="mt-2 inline-block break-all text-sm font-medium text-blue-700 underline"
+                            className="mt-2 inline-block break-all text-left text-sm font-medium text-[#6EE7A5] underline-offset-4 hover:underline"
                             onClick={() =>
                               void handleDownloadAttachment(reply.attachment!)
                             }
@@ -207,7 +224,7 @@ export default function ReplyThread({
                         )}
 
                         <time
-                          className="mt-1 block text-xs text-slate-600"
+                          className="mt-1.5 block text-xs text-[#BCD0C4]"
                           dateTime={reply.createdAt}
                         >
                           {new Date(reply.createdAt).toLocaleString()}
@@ -220,7 +237,7 @@ export default function ReplyThread({
                 {showReplyButton && (
                   <button
                     type="button"
-                    className="text-sm underline"
+                    className="text-sm font-medium text-[#6EE7A5] underline-offset-4 hover:underline"
                     aria-expanded={isSelected}
                     onClick={() => {
                       setSelectedMessageId(isSelected ? null : message.id);

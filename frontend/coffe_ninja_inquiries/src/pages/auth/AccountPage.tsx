@@ -1,12 +1,9 @@
-import { useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
-import { useGetMeQuery, useLogoutMutation } from "../../features/auth/authApi";
+import { Navigate } from "react-router-dom";
+import { UserIcon } from "../../components/ui/Icons";
+import { CenteredSpinner } from "../../components/ui/LoadingState";
+import { useGetMeQuery } from "../../features/auth/authApi";
 
 export default function AccountPage() {
-  const navigate = useNavigate();
-  const [logoutError, setLogoutError] = useState("");
-  const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
-
   const {
     data: user,
     error,
@@ -16,18 +13,12 @@ export default function AccountPage() {
     refetchOnMountOrArgChange: true,
   });
 
-  const handleLogout = async () => {
-    setLogoutError("");
-    try {
-      await logout().unwrap();
-      navigate("/login", { replace: true });
-    } catch {
-      setLogoutError("Unable to sign out. Please try again.");
-    }
-  };
-
-  if (isFetching) {
-    return <p role="status">Verifying</p>;
+  if (isFetching && !user) {
+    return (
+      <main className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
+        <CenteredSpinner label="Verifying…" />
+      </main>
+    );
   }
 
   if (error && "status" in error && error.status === 401) {
@@ -36,55 +27,84 @@ export default function AccountPage() {
 
   if (error || !user) {
     return (
-      <main className="mx-auto max-w-sm px-6 py-12">
-        <p role="status">Could Not Verify</p>
-        <button type="button" onClick={() => void refetch()}>
-          Try Again
-        </button>
+      <main className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
+        <div className="cf-card space-y-3">
+          <p role="status" className="text-sm text-rose-200">
+            Could not verify your account.
+          </p>
+          <button
+            type="button"
+            className="cf-btn-secondary"
+            onClick={() => void refetch()}
+          >
+            Try again
+          </button>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="mx-auto max-w-sm px-6 py-12">
-      <h1 className="text-2xl font-semibold">Your Account</h1>
+    <main className="mx-auto w-full max-w-5xl px-4 py-4 sm:px-6 sm:py-6 mt-10 md:mt-0">
+      <section className="cf-card space-y-4 sm:space-y-6">
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[#315747] pb-4 sm:gap-4 sm:pb-5">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#315747] bg-[#0B241B] text-[#6EE7A5] sm:h-12 sm:w-12">
+              <UserIcon className="h-5 w-5 sm:h-6 sm:w-6" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="truncate text-lg font-semibold text-[#F5FAF7] sm:text-2xl">
+                {user.fullName || "Your Account"}
+              </h1>
+              <p className="truncate text-xs text-[#BCD0C4] sm:text-sm">
+                {user.email}
+              </p>
+            </div>
+          </div>
 
-      <p className="mt-4">Full Name: {user.fullName}</p>
-      <p className="mt-4">Email: {user.email}</p>
-      <p className="mt-4">Role: {user.role}</p>
+          <span className="inline-flex items-center rounded-full border border-[#6EE7A5]/45 bg-[#17603F]/50 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-[#6EE7A5] sm:px-3 sm:py-1">
+            {user.role}
+          </span>
+        </header>
 
-      {logoutError && (
-        <p role="alert" className="mt-4 text-sm text-red-700">
-          {logoutError}
-        </p>
-      )}
+        <dl className="grid gap-2.5 sm:grid-cols-2 sm:gap-4">
+          <div className="rounded-lg border border-[#315747] bg-[#071B14] p-3 sm:p-4">
+            <dt className="text-[11px] font-medium uppercase tracking-wider text-[#BCD0C4] sm:text-xs">
+              Full Name
+            </dt>
+            <dd className="mt-1 break-words text-sm font-semibold text-[#F5FAF7]">
+              {user.fullName || "—"}
+            </dd>
+          </div>
 
-      <button
-        type="button"
-        onClick={() => void handleLogout()}
-        disabled={isLoggingOut}
-        className="mt-6 w-full rounded bg-slate-900 px-4 py-2 text-white disabled:opacity-50"
-      >
-        {isLoggingOut ? "Signing out..." : "Sign Out"}
-      </button>
+          <div className="rounded-lg border border-[#315747] bg-[#071B14] p-3 sm:p-4">
+            <dt className="text-[11px] font-medium uppercase tracking-wider text-[#BCD0C4] sm:text-xs">
+              Email
+            </dt>
+            <dd className="mt-1 break-all text-sm font-semibold text-[#F5FAF7]">
+              {user.email}
+            </dd>
+          </div>
 
-      {user.role === "CUSTOMER" && (
-        <Link to="/inquiries" className="mt-4 block underline">
-          My Inquiries
-        </Link>
-      )}
+          <div className="rounded-lg border border-[#315747] bg-[#071B14] p-3 sm:p-4">
+            <dt className="text-[11px] font-medium uppercase tracking-wider text-[#BCD0C4] sm:text-xs">
+              Account Role
+            </dt>
+            <dd className="mt-1 text-sm font-semibold text-[#F5FAF7]">
+              {user.role}
+            </dd>
+          </div>
 
-      {user.role === "ADMIN" && (
-        <Link to="/admin/inquiries" className="mt-4 block underline">
-          Manage Inquiries
-        </Link>
-      )}
-
-      {user.role === "EMPLOYEE" && (
-        <Link to="/employee/inquiries" className="mt-4 block underline">
-          Show Inquiries
-        </Link>
-      )}
+          <div className="rounded-lg border border-[#315747] bg-[#071B14] p-3 sm:p-4">
+            <dt className="text-[11px] font-medium uppercase tracking-wider text-[#BCD0C4] sm:text-xs">
+              Session Status
+            </dt>
+            <dd className="mt-1 text-sm font-semibold text-[#6EE7A5]">
+              Signed in
+            </dd>
+          </div>
+        </dl>
+      </section>
     </main>
   );
 }
