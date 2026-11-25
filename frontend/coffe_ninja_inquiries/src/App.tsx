@@ -3,13 +3,13 @@ import "./App.css";
 import LoginPage from "./pages/auth/LoginPage";
 import AccountPage from "./pages/auth/AccountPage";
 import RegisterPage from "./pages/auth/RegisterPage";
-import MyInquiriesPage from "./pages/Inquiry/MyInquiriesPage";
-import NewInquiryPage from "./pages/Inquiry/NewInquiryPage";
-import InquiryDetailsPage from "./pages/Inquiry/InquiryDetailsPage";
-import AdminInquiriesPage from "./pages/Inquiry/AdminInquiriesPage";
-import AssignedInquiriesPage from "./pages/Inquiry/Employee/AssignedInquiriesPage";
-import AssignedInquiryDetailsPage from "./pages/Inquiry/Employee/AssignedInquiryDetailsPage";
-import NotificationsPage from "./pages/Inquiry/Employee/NotificationsPage";
+import MyInquiriesPage from "./pages/customer/MyInquiriesPage";
+import NewInquiryPage from "./pages/customer/NewInquiryPage";
+import InquiryDetailsPage from "./pages/customer/InquiryDetailsPage";
+import AdminInquiriesPage from "./pages/admin/AdminInquiriesPage";
+import AssignedInquiriesPage from "./pages/employee/AssignedInquiriesPage";
+import AssignedInquiryDetailsPage from "./pages/employee/AssignedInquiryDetailsPage";
+import NotificationsPage from "./pages/employee/NotificationsPage";
 
 function App() {
   return (

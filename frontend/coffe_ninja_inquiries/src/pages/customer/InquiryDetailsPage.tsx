@@ -2,8 +2,8 @@ import { Link, Navigate, useParams } from "react-router-dom";
 
 import { useGetMeQuery } from "../../features/auth/authApi";
 import { useGetMyInquiryQuery } from "../../features/inquiries/inquiriesApi";
-import PublicReplyForm from "../messages/PublicReplyForm";
-import ReplyThread from "../messages/ReplyThread";
+import PublicReplyForm from "../../components/messages/PublicReplyForm";
+import ReplyThread from "../../components/messages/ReplyThread";
 
 export default function InquiryDetailsPage() {
   const { id = "" } = useParams<{ id: string }>();

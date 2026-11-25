@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useGetAssignedInquiriesQuery } from "../../../features/inquiries/inquiriesApi";
+import { useGetAssignedInquiriesQuery } from "../../features/inquiries/inquiriesApi";
 
 export default function AssignedInquiriesPage() {
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);

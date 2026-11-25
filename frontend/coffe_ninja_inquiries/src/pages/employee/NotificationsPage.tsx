@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { io } from "socket.io-client";
 
-import { useGetMeQuery } from "../../../features/auth/authApi";
+import { useGetMeQuery } from "../../features/auth/authApi";
 import {
   useGetMyNotificationsQuery,
   useMarkNotificationReadMutation,
   type InboxNotification,
-} from "../../../features/notifications/notificationsApi";
+} from "../../features/notifications/notificationsApi";
 
 type NotificationRowProps = {
   notification: InboxNotification;

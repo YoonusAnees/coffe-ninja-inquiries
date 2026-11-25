@@ -5,11 +5,11 @@ import {
   useUpdateAssignedStatusMutation,
   type EmployeeNextStatus,
   type InquiryStatus,
-} from "../../../features/inquiries/inquiriesApi";
-import PublicReplyForm from "../../messages/PublicReplyForm";
-import ReplyThread from "../../messages/ReplyThread";
-import { useGetMeQuery } from "../../../features/auth/authApi";
-import EmployeeNotes from "../../messages/EmployeeNotes";
+} from "../../features/inquiries/inquiriesApi";
+import PublicReplyForm from "../../components/messages/PublicReplyForm";
+import ReplyThread from "../../components/messages/ReplyThread";
+import { useGetMeQuery } from "../../features/auth/authApi";
+import EmployeeNotes from "./EmployeeNotes";
 
 type StatusAction = {
   status: EmployeeNextStatus;
