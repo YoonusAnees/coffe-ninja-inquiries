@@ -27,7 +27,11 @@ function NotificationRow({ notification, userId }: NotificationRowProps) {
   return (
     <li className="space-y-2 rounded border p-4">
       <div className="flex items-center justify-between gap-3">
-        <p className="font-medium">An inquiry was assigned to you</p>
+        <p className="font-medium">
+          {notification.type === "CUSTOMER_REPLIED"
+            ? "A customer replied to your inquiry"
+            : "An inquiry was assigned to you"}
+        </p>
         <span className="text-sm text-slate-600">
           {isUnread ? "Unread" : "Read"}
         </span>

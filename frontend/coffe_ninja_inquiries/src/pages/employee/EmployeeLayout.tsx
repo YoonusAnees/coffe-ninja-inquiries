@@ -29,19 +29,31 @@ function EmployeeNavbar({ userId }: { userId: string }) {
       transports: ["websocket"],
     });
 
-    const refreshNotifications = () => {
+    const refreshInbox = () => {
       dispatch(
         baseApi.util.invalidateTags([{ type: "Notification", id: userId }]),
       );
     };
 
-    socket.on("notifications:ready", refreshNotifications);
-    socket.on("notifications:changed", refreshNotifications);
+    const refreshInboxAndMessages = () => {
+      dispatch(
+        baseApi.util.invalidateTags([
+          { type: "Notification", id: userId },
+          "Message",
+        ]),
+      );
+    };
+
+    socket.on("notifications:ready", refreshInboxAndMessages);
+    socket.on("notifications:changed", refreshInbox);
+    socket.on("customer-reply:created", refreshInboxAndMessages);
+
     socket.connect();
 
     return () => {
-      socket.off("notifications:ready", refreshNotifications);
-      socket.off("notifications:changed", refreshNotifications);
+      socket.off("notifications:ready", refreshInboxAndMessages);
+      socket.off("notifications:changed", refreshInbox);
+      socket.off("customer-reply:created", refreshInboxAndMessages);
       socket.disconnect();
     };
   }, [dispatch, userId]);
