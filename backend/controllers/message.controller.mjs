@@ -1,11 +1,12 @@
 import { employeeSendMessage, customerGetMessages, customerSendMessage, employeeSendNote, employeeGetNotes, employeeGetMessage } from "../services/message.service.mjs"
-
+import { downloadReplyAttachment } from "../services/attachmentDownload.service.mjs";
 export const customerSend = async (req, res, next) => {
     try {
         const reply = await customerSendMessage(
             req.params.id,
             req.user.id,
-            req.body
+            req.body,
+            req.file,
         );
         res.set("Cache-Control", "no-store");
 
@@ -48,6 +49,7 @@ export const employeeSendReply = async (req, res, next) => {
             req.params.id,
             req.user.id,
             req.body,
+            req.file,
         );
 
         res.set("Cache-Control", "no-store");
@@ -112,6 +114,27 @@ export const getEmployeeOwnMessages = async (req, res, next) => {
             message: "Replies fetched.",
             data: { replies },
         });
+    } catch (error) {
+        return next(error);
+    }
+};
+
+export const downloadAttachment = async (req, res, next) => {
+    try {
+        const file = await downloadReplyAttachment(
+            req.params.attachmentId,
+            req.user,
+        );
+
+        res.set("Cache-Control", "no-store");
+        res.set("Content-Type", file.mimeType);
+        res.set(
+            "Content-Disposition",
+            `attachment; filename="${encodeURIComponent(file.originalName)}"`,
+        );
+        res.set("X-Content-Type-Options", "nosniff");
+
+        return res.status(200).send(file.buffer);
     } catch (error) {
         return next(error);
     }
