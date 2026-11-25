@@ -1,5 +1,12 @@
 import { baseApi } from "../../app/baseApi";
 
+export type ReplyAttachment = {
+  id: string;
+  originalName: string;
+  mimeType: string;
+  sizeBytes: number;
+};
+
 export type PublicReply = {
   id: string;
   authorId: string;
@@ -7,6 +14,7 @@ export type PublicReply = {
   authorRole: "CUSTOMER" | "EMPLOYEE" | "ADMIN";
   body: string;
   replyToMessageId: string | null;
+  attachment?: ReplyAttachment | null;
   createdAt: string;
 };
 
@@ -19,8 +27,31 @@ type ApiResponse<T> = {
 type SendPublicReplyInput = {
   inquiryId: string;
   body: string;
-  replyToMessageId?: string;
+  replyToMessageId?: string | null;
+  attachment?: File;
 };
+
+function buildReplyBody(input: SendPublicReplyInput) {
+  const { body, replyToMessageId, attachment } = input;
+
+  if (!attachment) {
+    if (replyToMessageId) {
+      return { body, replyToMessageId };
+    }
+
+    return { body };
+  }
+
+  const form = new FormData();
+  form.append("body", body);
+  form.append("attachment", attachment);
+
+  if (replyToMessageId) {
+    form.append("replyToMessageId", replyToMessageId);
+  }
+
+  return form;
+}
 
 type InternalNote = {
   id: string;
@@ -33,10 +64,6 @@ type AddEmployeeNoteInput = {
   inquiryId: string;
   body: string;
 };
-
- 
-
-
 
 export const messagesApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -51,22 +78,22 @@ export const messagesApi = baseApi.injectEndpoints({
     }),
 
     sendCustomerReply: builder.mutation<PublicReply, SendPublicReplyInput>({
-  query: ({ inquiryId, body, replyToMessageId }) => ({
-    url: `message/${encodeURIComponent(inquiryId)}/replies`,
-    method: "POST",
-    body: { body, replyToMessageId },
-  }),
-  transformResponse: (response: ApiResponse<{ reply: PublicReply }>) =>
-    response.data.reply,
-  invalidatesTags: (_result, error, { inquiryId }) =>
-    error ? [] : [{ type: "Message", id: inquiryId }],
-}),
+      query: (input) => ({
+        url: `message/${encodeURIComponent(input.inquiryId)}/replies`,
+        method: "POST",
+        body: buildReplyBody(input),
+      }),
+      transformResponse: (response: ApiResponse<{ reply: PublicReply }>) =>
+        response.data.reply,
+      invalidatesTags: (_result, error, { inquiryId }) =>
+        error ? [] : [{ type: "Message", id: inquiryId }],
+    }),
 
     sendPublicReply: builder.mutation<PublicReply, SendPublicReplyInput>({
-      query: ({ inquiryId, body }) => ({
-        url: `message/assigned/${encodeURIComponent(inquiryId)}/replies`,
+      query: (input) => ({
+        url: `message/assigned/${encodeURIComponent(input.inquiryId)}/replies`,
         method: "POST",
-        body: { body },
+        body: buildReplyBody(input),
       }),
       transformResponse: (response: ApiResponse<{ reply: PublicReply }>) =>
         response.data.reply,
@@ -75,41 +102,36 @@ export const messagesApi = baseApi.injectEndpoints({
     }),
 
     getEmployeeInquiryReplies: builder.query<PublicReply[], string>({
-  query: (inquiryId) =>
-    `message/assigned/${encodeURIComponent(inquiryId)}/replies`,
-  transformResponse: (response: ApiResponse<{ replies: PublicReply[] }>) =>
-    response.data.replies,
-  providesTags: (_result, _error, inquiryId) => [
-    { type: "Message", id: inquiryId },
-  ],
-}),
+      query: (inquiryId) =>
+        `message/assigned/${encodeURIComponent(inquiryId)}/replies`,
+      transformResponse: (response: ApiResponse<{ replies: PublicReply[] }>) =>
+        response.data.replies,
+      providesTags: (_result, _error, inquiryId) => [
+        { type: "Message", id: inquiryId },
+      ],
+    }),
 
-getEmployeeNotes: builder.query<InternalNote[], string>({
-  query: (inquiryId) =>
-    `message/assigned/${encodeURIComponent(inquiryId)}/notes`,
+    getEmployeeNotes: builder.query<InternalNote[], string>({
+      query: (inquiryId) =>
+        `message/assigned/${encodeURIComponent(inquiryId)}/notes`,
+      transformResponse: (response: ApiResponse<{ notes: InternalNote[] }>) =>
+        response.data.notes,
+      providesTags: (_result, _error, inquiryId) => [
+        { type: "Message", id: `notes-${inquiryId}` },
+      ],
+    }),
 
-  transformResponse: (response: ApiResponse<{ notes: InternalNote[] }>) =>
-    response.data.notes,
-
-  providesTags: (_result, _error, inquiryId) => [
-    { type: "Message", id: `notes-${inquiryId}` },
-  ],
-}),
-
-addEmployeeNote: builder.mutation<InternalNote, AddEmployeeNoteInput>({
-  query: ({ inquiryId, body }) => ({
-    url: `message/assigned/${encodeURIComponent(inquiryId)}/notes`,
-    method: "POST",
-    body: { body },
-  }),
-
-  transformResponse: (response: ApiResponse<{ note: InternalNote }>) =>
-    response.data.note,
-
-  invalidatesTags: (_result, error, { inquiryId }) =>
-    error ? [] : [{ type: "Message", id: `notes-${inquiryId}` }],
-}),
-
+    addEmployeeNote: builder.mutation<InternalNote, AddEmployeeNoteInput>({
+      query: ({ inquiryId, body }) => ({
+        url: `message/assigned/${encodeURIComponent(inquiryId)}/notes`,
+        method: "POST",
+        body: { body },
+      }),
+      transformResponse: (response: ApiResponse<{ note: InternalNote }>) =>
+        response.data.note,
+      invalidatesTags: (_result, error, { inquiryId }) =>
+        error ? [] : [{ type: "Message", id: `notes-${inquiryId}` }],
+    }),
   }),
 });
 
