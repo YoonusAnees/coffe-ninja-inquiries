@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { API_BASE_URL, API_CREDENTIALS } from "../../config/env";
 import {
   useGetCustomerInquiryRepliesQuery,
   useGetEmployeeInquiryRepliesQuery,
@@ -71,8 +72,8 @@ export default function ReplyThread({
     setDownloadError("");
     try {
       const response = await fetch(
-        `/api/v1/message/attachments/${encodeURIComponent(attachment.id)}/download`,
-        { credentials: "same-origin" },
+        `${API_BASE_URL}message/attachments/${encodeURIComponent(attachment.id)}/download`,
+        { credentials: API_CREDENTIALS },
       );
 
       if (!response.ok) {
