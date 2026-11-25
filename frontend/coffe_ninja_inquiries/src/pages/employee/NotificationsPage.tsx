@@ -8,25 +8,20 @@ import {
   type InboxNotification,
 } from "../../features/notifications/notificationsApi";
 
+const notificationLabels: Record<InboxNotification["type"], string> = {
+  INQUIRY_ASSIGNED: "An inquiry was assigned to you",
+  CUSTOMER_REPLIED: "Customer replied to an inquiry",
+  EMPLOYEE_REPLIED: "Support replied to your inquiry",
+};
+
 type NotificationRowProps = {
   notification: InboxNotification;
   userId: string;
 };
 
-const notificationLabels: Record<InboxNotification["type"], string> = {
-  INQUIRY_ASSIGNED: "An inquiry was assigned to you",
-  CUSTOMER_REPLIED: "A customer replied to your inquiry",
-  EMPLOYEE_REPLIED: "Support replied to your inquiry",
-};
-
 function NotificationRow({ notification, userId }: NotificationRowProps) {
   const [markRead, request] = useMarkNotificationReadMutation();
   const isUnread = notification.readAt === null;
-
-  const inquiryPath =
-    notification.type === "EMPLOYEE_REPLIED"
-      ? `/inquiries/${encodeURIComponent(notification.inquiryId)}`
-      : `/employee/inquiries/${encodeURIComponent(notification.inquiryId)}`;
 
   const handleMarkRead = () => {
     void markRead({
@@ -35,31 +30,47 @@ function NotificationRow({ notification, userId }: NotificationRowProps) {
     });
   };
 
+  const inquiryPath =
+    notification.type === "EMPLOYEE_REPLIED"
+      ? `/inquiries/${encodeURIComponent(notification.inquiryId)}`
+      : `/employee/inquiries/${encodeURIComponent(notification.inquiryId)}`;
+
   return (
-    <li className="space-y-2 rounded border p-4">
-      <div className="flex items-center justify-between gap-3">
-        <p className="font-medium">{notificationLabels[notification.type]}</p>
-        <span className="text-sm text-slate-600">
+    <li className="cf-card space-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="font-medium text-[#F5FAF7]">
+          {notificationLabels[notification.type]}
+        </p>
+        <span
+          className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${
+            isUnread
+              ? "border-[#6EE7A5]/50 bg-[#17603F]/50 text-[#6EE7A5]"
+              : "border-[#315747] bg-[#0B241B] text-[#BCD0C4]"
+          }`}
+        >
           {isUnread ? "Unread" : "Read"}
         </span>
       </div>
 
       <time
-        className="block text-sm text-slate-600"
+        className="block text-xs text-[#BCD0C4]"
         dateTime={notification.createdAt}
       >
         {new Date(notification.createdAt).toLocaleString()}
       </time>
 
-      <div className="flex items-center gap-4">
-        <Link className="underline" to={inquiryPath}>
+      <div className="flex flex-wrap items-center gap-4 pt-1">
+        <Link
+          className="text-sm font-medium text-[#6EE7A5] underline-offset-4 hover:underline"
+          to={inquiryPath}
+        >
           Open inquiry
         </Link>
 
         {isUnread && (
           <button
             type="button"
-            className="rounded border px-3 py-1 disabled:opacity-50"
+            className="cf-btn-secondary text-xs"
             disabled={request.isLoading || request.isSuccess}
             onClick={handleMarkRead}
           >
@@ -69,7 +80,7 @@ function NotificationRow({ notification, userId }: NotificationRowProps) {
       </div>
 
       {request.isError && (
-        <p role="alert" className="text-sm">
+        <p role="alert" className="text-sm text-rose-300">
           Could not mark this notification as read. Please try again.
         </p>
       )}
@@ -110,25 +121,27 @@ function Inbox({
   ).length;
 
   return (
-    <main className="mx-auto max-w-3xl space-y-5 px-6 py-8">
+    <main className="mx-auto w-full max-w-3xl space-y-5 px-4 py-6 sm:px-6">
       <Link
-        className="underline"
+        className="inline-block text-sm font-medium text-[#6EE7A5] underline-offset-4 hover:underline"
         to={customerView ? "/inquiries" : "/employee/inquiries"}
       >
         {customerView ? "Back to my inquiries" : "Back to assigned inquiries"}
       </Link>
 
-      <header className="flex items-center justify-between gap-3">
+      <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Notifications</h1>
+          <h1 className="text-2xl font-semibold text-[#F5FAF7]">
+            Notifications
+          </h1>
           {!isLoading && !isError && (
-            <p className="text-sm text-slate-600">{unreadCount} unread</p>
+            <p className="text-sm text-[#BCD0C4]">{unreadCount} unread</p>
           )}
         </div>
 
         <button
           type="button"
-          className="rounded border px-3 py-2 disabled:opacity-50"
+          className="cf-btn-secondary"
           disabled={isManualRefreshing}
           onClick={() => void handleManualRefresh()}
         >
@@ -136,16 +149,28 @@ function Inbox({
         </button>
       </header>
 
-      {isLoading && <p role="status">Loading notifications…</p>}
+      {isLoading && (
+        <div className="cf-card">
+          <p role="status" className="text-sm text-[#BCD0C4]">
+            Loading notifications…
+          </p>
+        </div>
+      )}
 
       {isError && (
-        <p role="alert">
-          Could not load your notifications. Select Refresh to retry.
-        </p>
+        <div className="cf-card">
+          <p role="alert" className="text-sm text-rose-200">
+            Could not load your notifications. Select Refresh to retry.
+          </p>
+        </div>
       )}
 
       {!isLoading && !isError && notifications.length === 0 && (
-        <p>You have no notifications yet.</p>
+        <div className="cf-card">
+          <p className="text-sm text-[#BCD0C4]">
+            You have no notifications yet.
+          </p>
+        </div>
       )}
 
       {!isError && notifications.length > 0 && (
@@ -167,21 +192,31 @@ export default function NotificationsPage() {
   const { data: currentUser, isLoading, isError, refetch } = useGetMeQuery();
 
   if (isLoading) {
-    return <p role="status">Checking your session…</p>;
+    return (
+      <main className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
+        <p role="status" className="text-sm text-[#BCD0C4]">
+          Checking your session…
+        </p>
+      </main>
+    );
   }
 
   if (isError || !currentUser) {
     return (
-      <div className="space-y-2 p-6">
-        <p role="alert">Could not load your account.</p>
-        <button
-          type="button"
-          className="underline"
-          onClick={() => void refetch()}
-        >
-          Try again
-        </button>
-      </div>
+      <main className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
+        <div className="cf-card space-y-2">
+          <p role="alert" className="text-sm text-rose-200">
+            Could not load your account.
+          </p>
+          <button
+            type="button"
+            className="cf-btn-secondary"
+            onClick={() => void refetch()}
+          >
+            Try again
+          </button>
+        </div>
+      </main>
     );
   }
 

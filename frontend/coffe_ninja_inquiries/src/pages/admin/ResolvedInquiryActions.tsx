@@ -1,6 +1,6 @@
 import {
-  useReopenInquiryMutation,
   useCloseInquiryMutation,
+  useReopenInquiryMutation,
 } from "../../features/inquiries/inquiriesApi";
 
 type Props = {
@@ -27,11 +27,11 @@ export default function ResolvedInquiryActions({ inquiryId, version }: Props) {
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 border-t border-[#315747] pt-3">
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          className="rounded border px-3 py-2 disabled:opacity-50"
+          className="cf-btn-secondary"
           disabled={isSaving}
           onClick={handleReopen}
         >
@@ -40,7 +40,7 @@ export default function ResolvedInquiryActions({ inquiryId, version }: Props) {
 
         <button
           type="button"
-          className="rounded bg-slate-900 px-3 py-2 text-white disabled:opacity-50"
+          className="cf-btn-primary"
           disabled={isSaving}
           onClick={handleClose}
         >
@@ -49,11 +49,15 @@ export default function ResolvedInquiryActions({ inquiryId, version }: Props) {
       </div>
 
       {hasConflict && (
-        <p role="alert">This inquiry changed. Review its latest status.</p>
+        <p role="alert" className="text-sm text-amber-200">
+          This inquiry changed. Review its latest status.
+        </p>
       )}
 
       {error && !hasConflict && (
-        <p role="alert">Could not update the inquiry. Please try again.</p>
+        <p role="alert" className="text-sm text-rose-300">
+          Could not update the inquiry. Please try again.
+        </p>
       )}
     </div>
   );

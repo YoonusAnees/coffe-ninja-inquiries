@@ -44,22 +44,36 @@ export default function EmployeeNotes({
   };
 
   return (
-    <section className="space-y-4 rounded border border-amber-200 bg-amber-50 p-4">
-      <header>
-        <h2 className="text-lg font-semibold">Internal notes</h2>
-        <p className="text-sm text-slate-700">
-          Private to staff. The next assigned employee can read these notes.
+    <section className="space-y-4 rounded-xl border border-amber-400/40 bg-amber-950/25 p-4">
+      <header className="space-y-1">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold text-[#F5FAF7]">
+            Internal notes
+          </h2>
+          <span className="rounded-full border border-amber-400/45 bg-amber-950/60 px-2.5 py-0.5 text-xs font-medium text-amber-200">
+            Private to staff
+          </span>
+        </div>
+        <p className="text-sm text-[#BCD0C4]">
+          Not visible to the customer. The next assigned employee can read these
+          notes.
         </p>
       </header>
 
-      {isLoading && <p role="status">Loading internal notes…</p>}
+      {isLoading && (
+        <p role="status" className="text-sm text-[#BCD0C4]">
+          Loading internal notes…
+        </p>
+      )}
 
       {isError && (
-        <div>
-          <p role="alert">Could not load internal notes.</p>
+        <div className="space-y-2">
+          <p role="alert" className="text-sm text-rose-200">
+            Could not load internal notes.
+          </p>
           <button
             type="button"
-            className="underline"
+            className="cf-btn-secondary"
             disabled={isFetching}
             onClick={() => void refetch()}
           >
@@ -71,19 +85,24 @@ export default function EmployeeNotes({
       {!isLoading && !isError && (
         <>
           {notes.length === 0 ? (
-            <p className="text-sm text-slate-700">No internal notes yet.</p>
+            <p className="text-sm text-[#BCD0C4]">No internal notes yet.</p>
           ) : (
             <ul className="space-y-3">
               {notes.map((note) => (
-                <li key={note.id} className="rounded border bg-white p-3">
-                  <p className="text-sm font-semibold">
+                <li
+                  key={note.id}
+                  className="space-y-1 rounded-lg border border-amber-400/30 bg-[#0B241B] p-3"
+                >
+                  <p className="text-xs font-semibold text-amber-200">
                     {note.authorId === currentUserId ? "You" : "Employee"}
                   </p>
 
-                  <p className="whitespace-pre-wrap">{note.body}</p>
+                  <p className="whitespace-pre-wrap break-words text-sm text-[#F5FAF7]">
+                    {note.body}
+                  </p>
 
                   <time
-                    className="text-xs text-slate-600"
+                    className="block text-xs text-[#BCD0C4]"
                     dateTime={note.createdAt}
                   >
                     {new Date(note.createdAt).toLocaleString()}
@@ -95,10 +114,10 @@ export default function EmployeeNotes({
 
           {canAddNote && (
             <form className="space-y-3" onSubmit={handleSubmit}>
-              <label className="block font-medium">
-                New internal note
+              <label className="block space-y-1 text-sm font-medium text-[#BCD0C4]">
+                <span>New internal note</span>
                 <textarea
-                  className="mt-1 block w-full rounded border bg-white p-2"
+                  className="cf-input"
                   rows={3}
                   maxLength={50000}
                   value={body}
@@ -115,16 +134,20 @@ export default function EmployeeNotes({
 
               <button
                 type="submit"
-                className="rounded bg-slate-900 px-4 py-2 text-white disabled:opacity-50"
+                className="cf-btn-primary"
                 disabled={saveNote.isLoading || !body.trim()}
               >
                 {saveNote.isLoading ? "Saving…" : "Add internal note"}
               </button>
 
-              {saveNote.isSuccess && <p role="status">Internal note added.</p>}
+              {saveNote.isSuccess && (
+                <p role="status" className="text-sm text-[#6EE7A5]">
+                  Internal note added.
+                </p>
+              )}
 
               {saveNote.isError && (
-                <p role="alert">
+                <p role="alert" className="text-sm text-rose-300">
                   Could not save the note. Your draft is still here.
                 </p>
               )}

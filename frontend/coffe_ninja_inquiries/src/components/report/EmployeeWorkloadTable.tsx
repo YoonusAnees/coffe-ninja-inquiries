@@ -14,16 +14,19 @@ export default function EmployeeWorkloadTable() {
   return (
     <section
       aria-labelledby="employee-workload-heading"
-      className="space-y-4 rounded border p-4"
+      className="cf-card space-y-4"
     >
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="employee-workload-heading" className="text-lg font-semibold">
+        <h2
+          id="employee-workload-heading"
+          className="text-lg font-semibold text-[#F5FAF7]"
+        >
           Employee workload
         </h2>
 
         <button
           type="button"
-          className="rounded border px-3 py-1 text-sm disabled:opacity-50"
+          className="cf-btn-secondary text-xs"
           disabled={isFetching}
           onClick={() => void refetch()}
         >
@@ -32,11 +35,15 @@ export default function EmployeeWorkloadTable() {
       </header>
 
       {isLoading ? (
-        <p role="status">Loading employee workload…</p>
+        <p role="status" className="text-sm text-[#BCD0C4]">
+          Loading employee workload…
+        </p>
       ) : isError ? (
-        <p role="alert">Could not load employee workload. Try refreshing.</p>
+        <p role="alert" className="text-sm text-rose-200">
+          Could not load employee workload. Try refreshing.
+        </p>
       ) : employees.length === 0 ? (
-        <p>No employee accounts yet.</p>
+        <p className="text-sm text-[#BCD0C4]">No employee accounts yet.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
@@ -45,14 +52,14 @@ export default function EmployeeWorkloadTable() {
             </caption>
 
             <thead>
-              <tr className="border-b">
-                <th scope="col" className="px-2 py-2">
+              <tr className="border-b border-[#315747] text-xs uppercase tracking-wider text-[#BCD0C4]">
+                <th scope="col" className="px-2 py-2.5">
                   Employee
                 </th>
-                <th scope="col" className="px-2 py-2">
+                <th scope="col" className="px-2 py-2.5">
                   Account
                 </th>
-                <th scope="col" className="px-2 py-2 text-right">
+                <th scope="col" className="px-2 py-2.5 text-right">
                   Open inquiries
                 </th>
               </tr>
@@ -62,15 +69,26 @@ export default function EmployeeWorkloadTable() {
               {employees.map((employee) => (
                 <tr
                   key={employee.employeeId}
-                  className="border-b last:border-0"
+                  className="border-b border-[#315747]/60 last:border-0"
                 >
-                  <th scope="row" className="px-2 py-2 font-medium">
+                  <th
+                    scope="row"
+                    className="px-2 py-2.5 font-medium text-[#F5FAF7]"
+                  >
                     {employee.fullName}
                   </th>
-                  <td className="px-2 py-2">
-                    {employee.isActive ? "Active" : "Inactive"}
+                  <td className="px-2 py-2.5">
+                    <span
+                      className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-medium ${
+                        employee.isActive
+                          ? "border-[#6EE7A5]/45 bg-[#17603F]/40 text-[#6EE7A5]"
+                          : "border-[#315747] bg-[#0B241B] text-[#BCD0C4]"
+                      }`}
+                    >
+                      {employee.isActive ? "Active" : "Inactive"}
+                    </span>
                   </td>
-                  <td className="px-2 py-2 text-right tabular-nums">
+                  <td className="px-2 py-2.5 text-right font-semibold tabular-nums text-[#F5FAF7]">
                     {employee.openInquiryCount}
                   </td>
                 </tr>

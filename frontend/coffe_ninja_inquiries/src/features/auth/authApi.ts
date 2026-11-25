@@ -38,12 +38,17 @@ export const authApi = baseApi.injectEndpoints({
       }),
     }),
 
-    login: builder.mutation<UserResponse, LoginInput>({
+    login: builder.mutation<AuthUser, LoginInput>({
       query: (body) => ({
         url: "login",
         method: "POST",
         body,
       }),
+      transformResponse: (
+        response: MessageResponse & {
+          data: AuthUser | { user: AuthUser };
+        },
+      ) => ("user" in response.data ? response.data.user : response.data),
       invalidatesTags: (_result, error) => (error ? [] : ["CurrentUser"]),
     }),
 

@@ -23,16 +23,19 @@ export default function InquiryStatusSummary() {
   return (
     <section
       aria-labelledby="inquiry-status-heading"
-      className="space-y-4 rounded border p-4"
+      className="cf-card space-y-4"
     >
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="inquiry-status-heading" className="text-lg font-semibold">
+        <h2
+          id="inquiry-status-heading"
+          className="text-lg font-semibold text-[#F5FAF7]"
+        >
           Inquiries by status
         </h2>
 
         <button
           type="button"
-          className="rounded border px-3 py-1 text-sm disabled:opacity-50"
+          className="cf-btn-secondary text-xs"
           disabled={isFetching}
           onClick={() => void refetch()}
         >
@@ -41,22 +44,30 @@ export default function InquiryStatusSummary() {
       </header>
 
       {isError ? (
-        <p role="alert">Could not load inquiry counts. Try refreshing.</p>
+        <p role="alert" className="text-sm text-rose-200">
+          Could not load inquiry counts. Try refreshing.
+        </p>
       ) : !report ? (
-        <p role="status">Loading inquiry counts…</p>
+        <p role="status" className="text-sm text-[#BCD0C4]">
+          Loading inquiry counts…
+        </p>
       ) : (
         <>
-          <p className="text-sm text-slate-700">
-            Total inquiries: <strong>{report.total}</strong>
+          <p className="text-sm text-[#BCD0C4]">
+            Total inquiries:{" "}
+            <strong className="text-[#F5FAF7]">{report.total}</strong>
           </p>
 
           <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {report.statuses.map(({ status, count }) => (
-              <div key={status} className="rounded border p-3">
-                <dt className="text-sm text-slate-600">
+              <div
+                key={status}
+                className="rounded-lg border border-[#315747] bg-[#071B14] p-3"
+              >
+                <dt className="text-xs font-medium text-[#BCD0C4]">
                   {statusLabels[status]}
                 </dt>
-                <dd className="mt-1 text-xl font-semibold tabular-nums">
+                <dd className="mt-1 text-xl font-semibold tabular-nums text-[#F5FAF7]">
                   {count}
                 </dd>
               </div>

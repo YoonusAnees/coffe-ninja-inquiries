@@ -4,7 +4,11 @@ export const inquiryPriorities = ["LOW", "NORMAL", "URGENT"] as const;
 
 export type InquiryPriority = (typeof inquiryPriorities)[number];
 
-type AdminInquiry = InquiryDetails & InquiryAssignment;
+type AdminInquiry = InquiryDetails &
+  InquiryAssignment & {
+    customerName?: string;
+    assignedEmployeeName?: string | null;
+  };
 
 export const inquiryStatuses = [
   "NEW",
@@ -21,6 +25,13 @@ export type PaginationMeta = {
   page: number;
   limit: number;
   hasNextPage: boolean;
+};
+
+export type MyInquiriesQueryParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: InquiryStatus;
 };
 
 export type AssignableEmployeesQueryParams = {
@@ -130,11 +141,20 @@ const inquiryListTag = { type: "Inquiry", id: "LIST" } as const;
 
 export const inquiriesApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getMyInquiries: builder.query<InquirySummary[], void>({
-      query: () => "inquiry/my",
+    getMyInquiries: builder.query<
+      { inquiries: InquirySummary[]; pagination: PaginationMeta },
+      MyInquiriesQueryParams | void
+    >({
+      query: (params) => (params ? { url: "inquiry/my", params } : "inquiry/my"),
       transformResponse: (
-        response: ApiResponse<{ inquiries: InquirySummary[] }>,
-      ) => response.data.inquiries,
+        response: ApiResponse<{
+          inquiries: InquirySummary[];
+          pagination: PaginationMeta;
+        }>,
+      ) => ({
+        inquiries: response.data.inquiries,
+        pagination: response.data.pagination,
+      }),
       providesTags: [inquiryListTag],
     }),
 
