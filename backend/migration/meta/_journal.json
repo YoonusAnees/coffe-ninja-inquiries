@@ -71,6 +71,13 @@
       "when": 1795578767386,
       "tag": "0009_employee_reply_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795581557508,
+      "tag": "0010_message_attachments",
+      "breakpoints": true
     }
   ]
 }
