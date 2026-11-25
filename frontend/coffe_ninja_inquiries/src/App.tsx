@@ -7,6 +7,7 @@ import MyInquiriesPage from "./pages/customer/MyInquiriesPage";
 import NewInquiryPage from "./pages/customer/NewInquiryPage";
 import InquiryDetailsPage from "./pages/customer/InquiryDetailsPage";
 import AdminInquiriesPage from "./pages/admin/AdminInquiriesPage";
+import EmployeeLayout from "./pages/employee/EmployeeLayout";
 import AssignedInquiriesPage from "./pages/employee/AssignedInquiriesPage";
 import AssignedInquiryDetailsPage from "./pages/employee/AssignedInquiryDetailsPage";
 import NotificationsPage from "./pages/employee/NotificationsPage";
@@ -20,16 +21,23 @@ function App() {
         <Route path="/account" element={<AccountPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/inquiries" element={<MyInquiriesPage />} />
-        <Route path="inquiries/new" element={<NewInquiryPage />} />
+        <Route path="/inquiries/new" element={<NewInquiryPage />} />
         <Route path="/inquiries/:id" element={<InquiryDetailsPage />} />
         <Route path="/admin/inquiries" element={<AdminInquiriesPage />} />
-        <Route path="/employee/inquiries" element={<AssignedInquiriesPage />} />
-        <Route path="notifications" element={<NotificationsPage />} />
-        <Route path="/employee/notifications" element={<NotificationsPage />} />
+
         <Route
-          path="/employee/inquiries/:id"
-          element={<AssignedInquiryDetailsPage />}
+          path="/notifications"
+          element={<Navigate to="/employee/notifications" replace />}
         />
+
+        <Route path="/employee" element={<EmployeeLayout />}>
+          <Route path="inquiries" element={<AssignedInquiriesPage />} />
+          <Route
+            path="inquiries/:id"
+            element={<AssignedInquiryDetailsPage />}
+          />
+          <Route path="notifications" element={<NotificationsPage />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );

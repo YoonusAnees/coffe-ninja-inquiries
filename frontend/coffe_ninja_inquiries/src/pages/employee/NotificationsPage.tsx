@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { io } from "socket.io-client";
 
 import { useGetMeQuery } from "../../features/auth/authApi";
 import {
@@ -81,28 +80,6 @@ function EmployeeInbox({ userId }: { userId: string }) {
   } = useGetMyNotificationsQuery(userId, {
     refetchOnMountOrArgChange: true,
   });
-
-  useEffect(() => {
-    const socket = io({
-      autoConnect: false,
-      transports: ["websocket"],
-    });
-
-    const refreshInbox = () => {
-      void refetch();
-    };
-
-    socket.on("notifications:ready", refreshInbox);
-    socket.on("notifications:changed", refreshInbox);
-
-    socket.connect();
-
-    return () => {
-      socket.off("notifications:ready", refreshInbox);
-      socket.off("notifications:changed", refreshInbox);
-      socket.disconnect();
-    };
-  }, [userId, refetch]);
 
   const handleManualRefresh = async () => {
     if (isManualRefreshing) return;
