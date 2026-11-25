@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { ListSkeleton } from "../../components/ui/LoadingState";
 import { PriorityBadge, StatusBadge } from "../../components/ui/StatusBadge";
 import {
   inquiryStatuses,
@@ -35,11 +36,17 @@ export default function AdminInquiriesPage() {
   const inquiry = allInquiries.find((item) => item.id === selectedId);
 
   return (
-    <main className="mx-auto w-full max-w-5xl space-y-5 px-4 py-6 sm:px-6">
+    <main className="mx-auto w-full max-w-6xl space-y-5 px-4 py-5 sm:px-6 sm:py-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-[#F5FAF7]">
-          Admin Inquiries
-        </h1>
+        <div>
+          <h1 className="text-xl font-semibold text-[#F5FAF7] sm:text-2xl">
+            Admin Inquiries
+          </h1>
+          <p className="text-xs text-[#BCD0C4] sm:text-sm">
+            Select an inquiry to assign an employee, set priority, or manage
+            resolved requests.
+          </p>
+        </div>
 
         <button
           type="button"
@@ -78,13 +85,7 @@ export default function AdminInquiriesPage() {
         </select>
       </div>
 
-      {queue.isLoading && (
-        <div className="cf-card">
-          <p role="status" className="text-sm text-[#BCD0C4]">
-            Loading inquiries…
-          </p>
-        </div>
-      )}
+      {queue.isLoading && <ListSkeleton count={4} />}
 
       {queue.isError && (
         <div className="cf-card space-y-3">
@@ -128,8 +129,13 @@ export default function AdminInquiriesPage() {
       )}
 
       {inquiries.length > 0 && (
-        <div className="grid gap-6 md:grid-cols-2">
-          <ul className="space-y-2.5">
+        <div className="grid gap-5 md:grid-cols-12 md:items-start">
+          {/* Queue list (hidden on mobile when an inquiry is selected) */}
+          <ul
+            className={`space-y-2.5 md:col-span-5 ${
+              inquiry ? "hidden md:block" : "block"
+            }`}
+          >
             {inquiries.map((item) => (
               <li key={item.id}>
                 <button
@@ -143,13 +149,14 @@ export default function AdminInquiriesPage() {
                   onClick={() => setSelectedId(item.id)}
                 >
                   <div className="flex flex-wrap items-start justify-between gap-2">
-                    <span className="min-w-0 flex-1 break-words font-medium text-[#F5FAF7]">
+                    <span className="min-w-0 flex-1 break-words text-sm font-medium text-[#F5FAF7] sm:text-base">
                       {item.subject}
                     </span>
                     <StatusBadge status={item.status} />
                   </div>
                   <span className="mt-1.5 block text-xs text-[#BCD0C4]">
-                    {item.reference} · {item.customerName}
+                    {item.reference}
+                    {item.customerName ? ` · ${item.customerName}` : ""}
                     {item.assignedEmployeeName
                       ? ` · Assigned to ${item.assignedEmployeeName}`
                       : ""}
@@ -159,8 +166,19 @@ export default function AdminInquiriesPage() {
             ))}
           </ul>
 
+          {/* Detail & assignment panel */}
           {inquiry ? (
-            <section className="cf-card h-fit space-y-4">
+            <section className="cf-card h-fit space-y-4 md:sticky md:top-4 md:col-span-7">
+              <div className="md:hidden">
+                <button
+                  type="button"
+                  className="text-xs font-medium text-[#6EE7A5] underline-offset-4 hover:underline"
+                  onClick={() => setSelectedId(null)}
+                >
+                  ← Back to inquiry queue
+                </button>
+              </div>
+
               <div className="space-y-2 border-b border-[#315747] pb-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-xs font-medium text-[#BCD0C4]">
@@ -176,7 +194,7 @@ export default function AdminInquiriesPage() {
                 </h2>
               </div>
 
-              <p className="whitespace-pre-wrap break-words text-sm text-[#F5FAF7]">
+              <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-[#F5FAF7]">
                 {inquiry.description}
               </p>
 
@@ -224,7 +242,7 @@ export default function AdminInquiriesPage() {
               )}
             </section>
           ) : (
-            <div className="cf-card hidden h-fit md:block">
+            <div className="cf-card hidden h-fit md:col-span-7 md:block">
               <p className="text-sm text-[#BCD0C4]">
                 Select an inquiry from the list to assign or manage its status.
               </p>

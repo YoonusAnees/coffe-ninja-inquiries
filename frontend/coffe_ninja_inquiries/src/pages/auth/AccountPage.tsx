@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { UserIcon } from "../../components/ui/Icons";
+import { CenteredSpinner } from "../../components/ui/LoadingState";
 import { useGetMeQuery } from "../../features/auth/authApi";
 
 export default function AccountPage() {
@@ -14,10 +15,8 @@ export default function AccountPage() {
 
   if (isFetching && !user) {
     return (
-      <main className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
-        <p role="status" className="text-sm text-[#BCD0C4]">
-          Verifying…
-        </p>
+      <main className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
+        <CenteredSpinner label="Verifying…" />
       </main>
     );
   }

@@ -1,18 +1,13 @@
 import { Navigate } from "react-router-dom";
-import { useGetMeQuery } from "../../features/auth/authApi";
 import { getDashboardPathForRole } from "../../config/navigation";
+import { useGetMeQuery } from "../../features/auth/authApi";
+import { CenteredSpinner } from "../ui/LoadingState";
 
 export default function HomeRedirect() {
   const { currentData: user, isLoading, isError } = useGetMeQuery();
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#071B14] px-6 text-[#BCD0C4]">
-        <p role="status" className="text-sm">
-          Loading…
-        </p>
-      </div>
-    );
+    return <CenteredSpinner fullScreen label="Loading…" />;
   }
 
   if (isError || !user) {

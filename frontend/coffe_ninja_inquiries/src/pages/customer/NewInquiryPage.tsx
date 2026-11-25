@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
+import { CenteredSpinner } from "../../components/ui/LoadingState";
 import { useGetMeQuery } from "../../features/auth/authApi";
 import { useCreateInquiryMutation } from "../../features/inquiries/inquiriesApi";
 
@@ -78,9 +79,7 @@ export default function NewInquiryPage() {
   if (profile.isFetching && !profile.data) {
     return (
       <main className="mx-auto w-full max-w-2xl px-4 py-6 sm:px-6">
-        <p role="status" className="text-sm text-[#BCD0C4]">
-          Checking your session…
-        </p>
+        <CenteredSpinner label="Checking your session…" />
       </main>
     );
   }

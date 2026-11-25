@@ -1,4 +1,5 @@
 import { useGetEmployeeWorkloadQuery } from "../../features/reports/reportsApi";
+import { TableSkeleton } from "../ui/LoadingState";
 
 export default function EmployeeWorkloadTable() {
   const {
@@ -35,9 +36,7 @@ export default function EmployeeWorkloadTable() {
       </header>
 
       {isLoading ? (
-        <p role="status" className="text-sm text-[#BCD0C4]">
-          Loading employee workload…
-        </p>
+        <TableSkeleton />
       ) : isError ? (
         <p role="alert" className="text-sm text-rose-200">
           Could not load employee workload. Try refreshing.

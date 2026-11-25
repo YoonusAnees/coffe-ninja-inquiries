@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { ThreadSkeleton } from "../../components/ui/LoadingState";
 
 import {
   useAddEmployeeNoteMutation,
@@ -60,11 +61,7 @@ export default function EmployeeNotes({
         </p>
       </header>
 
-      {isLoading && (
-        <p role="status" className="text-sm text-[#BCD0C4]">
-          Loading internal notes…
-        </p>
-      )}
+      {isLoading && <ThreadSkeleton />}
 
       {isError && (
         <div className="space-y-2">

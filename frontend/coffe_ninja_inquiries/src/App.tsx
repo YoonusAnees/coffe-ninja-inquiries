@@ -16,7 +16,7 @@ import NewInquiryPage from "./pages/customer/NewInquiryPage";
 import AssignedInquiriesPage from "./pages/employee/AssignedInquiriesPage";
 import AssignedInquiryDetailsPage from "./pages/employee/AssignedInquiryDetailsPage";
 import EmployeeDashboardPage from "./pages/employee/EmployeeDashboardPage";
-import NotificationsPage from "./pages/employee/NotificationsPage";
+import NotificationsPage from "./pages/notifications/NotificationsPage";
 
 function App() {
   return (

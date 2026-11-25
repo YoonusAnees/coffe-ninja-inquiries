@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
+import { ListSkeleton } from "../../components/ui/LoadingState";
 import PaginationControls from "../../components/ui/PaginationControls";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import {
@@ -91,11 +92,7 @@ export default function MyInquiriesPage() {
       </div>
 
       {isLoading ? (
-        <div className="cf-card shrink-0">
-          <p role="status" className="text-sm text-[#BCD0C4]">
-            Loading your inquiries…
-          </p>
-        </div>
+        <ListSkeleton count={limit} />
       ) : error || !data ? (
         <div className="cf-card shrink-0 space-y-3">
           <p role="alert" className="text-sm text-rose-200">

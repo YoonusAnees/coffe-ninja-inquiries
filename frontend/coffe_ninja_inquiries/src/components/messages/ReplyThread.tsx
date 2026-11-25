@@ -7,6 +7,7 @@ import {
 } from "../../features/messages/messagesApi";
 
 import PublicReplyForm from "./PublicReplyForm";
+import { ThreadSkeleton } from "../ui/LoadingState";
 import MarkVisibleRepliesRead from "../../pages/messages/MarkVisibleRepliesRead";
 
 type Props = {
@@ -134,11 +135,7 @@ export default function ReplyThread({
         </button>
       </div>
 
-      {thread.isLoading && (
-        <p role="status" className="text-sm text-[#BCD0C4]">
-          Loading conversation…
-        </p>
-      )}
+      {thread.isLoading && <ThreadSkeleton />}
 
       {thread.isError && (
         <p role="alert" className="text-sm text-rose-200">

@@ -2,6 +2,7 @@ import { Navigate, useParams } from "react-router-dom";
 
 import PublicReplyForm from "../../components/messages/PublicReplyForm";
 import ReplyThread from "../../components/messages/ReplyThread";
+import { DetailsSkeleton } from "../../components/ui/LoadingState";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { useGetMeQuery } from "../../features/auth/authApi";
 import { useGetMyInquiryQuery } from "../../features/inquiries/inquiriesApi";
@@ -29,10 +30,8 @@ export default function InquiryDetailsPage() {
 
   if (isFetching && !inquiry) {
     return (
-      <main className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
-        <p role="status" className="text-sm text-[#BCD0C4]">
-          Loading inquiry details…
-        </p>
+      <main className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6">
+        <DetailsSkeleton />
       </main>
     );
   }

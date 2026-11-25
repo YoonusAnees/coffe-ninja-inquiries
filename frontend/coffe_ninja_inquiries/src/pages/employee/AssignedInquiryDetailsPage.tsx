@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import PublicReplyForm from "../../components/messages/PublicReplyForm";
 import ReplyThread from "../../components/messages/ReplyThread";
+import { DetailsSkeleton } from "../../components/ui/LoadingState";
 import { PriorityBadge, StatusBadge } from "../../components/ui/StatusBadge";
 import { useGetMeQuery } from "../../features/auth/authApi";
 import {
@@ -133,13 +134,7 @@ export default function AssignedInquiryDetailsPage() {
         </button>
       </header>
 
-      {isInitialLoading && (
-        <div className="cf-card">
-          <p role="status" className="text-sm text-[#BCD0C4]">
-            Checking inquiry access…
-          </p>
-        </div>
-      )}
+      {isInitialLoading && <DetailsSkeleton />}
 
       {isError && !isInitialLoading && (
         <div className="cf-card space-y-3">

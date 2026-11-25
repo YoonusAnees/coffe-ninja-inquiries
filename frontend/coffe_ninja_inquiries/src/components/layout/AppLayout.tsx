@@ -27,6 +27,7 @@ import {
   MoreHorizontalIcon,
   XIcon,
 } from "../ui/Icons";
+import { CenteredSpinner } from "../ui/LoadingState";
 
 function useNotificationSync(userId: string, role: UserRole) {
   const dispatch = useDispatch();
@@ -444,13 +445,7 @@ export default function AppLayout() {
   const { currentData: user, error, isLoading, refetch } = useGetMeQuery();
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#071B14] px-6 text-[#BCD0C4]">
-        <p role="status" className="text-sm">
-          Checking your session…
-        </p>
-      </div>
-    );
+    return <CenteredSpinner fullScreen label="Checking your session…" />;
   }
 
   if (error && "status" in error && error.status === 401) {

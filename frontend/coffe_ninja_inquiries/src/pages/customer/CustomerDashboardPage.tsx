@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { ListSkeleton } from "../../components/ui/LoadingState";
 import PaginationControls from "../../components/ui/PaginationControls";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { useGetMyInquiriesQuery } from "../../features/inquiries/inquiriesApi";
@@ -62,11 +63,7 @@ export default function CustomerDashboardPage() {
       >
 
         {isLoading ? (
-          <div className="cf-card shrink-0">
-            <p role="status" className="text-sm text-[#BCD0C4]">
-              Loading recent inquiries…
-            </p>
-          </div>
+          <ListSkeleton count={limit} />
         ) : isError ? (
           <div className="cf-card shrink-0 space-y-3">
             <p role="alert" className="text-sm text-rose-200">

@@ -1,5 +1,6 @@
 import type { InquiryStatus } from "../../features/inquiries/inquiriesApi";
 import { useGetInquiryStatusReportQuery } from "../../features/reports/reportsApi";
+import { ReportSummarySkeleton } from "../ui/LoadingState";
 
 const statusLabels: Record<InquiryStatus, string> = {
   NEW: "New",
@@ -48,9 +49,7 @@ export default function InquiryStatusSummary() {
           Could not load inquiry counts. Try refreshing.
         </p>
       ) : !report ? (
-        <p role="status" className="text-sm text-[#BCD0C4]">
-          Loading inquiry counts…
-        </p>
+        <ReportSummarySkeleton />
       ) : (
         <>
           <p className="text-sm text-[#BCD0C4]">
@@ -58,7 +57,7 @@ export default function InquiryStatusSummary() {
             <strong className="text-[#F5FAF7]">{report.total}</strong>
           </p>
 
-          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {report.statuses.map(({ status, count }) => (
               <div
                 key={status}
