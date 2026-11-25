@@ -6,3 +6,4 @@ export { assignments } from "./schema.assignments.mjs";
 export { statusHistory } from "./schema.statusHistory.mjs"
 export { messages, messageVisibilityEnum } from "./schema.messages.mjs"
 export { notifications, notificationTypeEnum } from "./schema.notifications.mjs";
+export { attachments } from "./schema.attachments.mjs";

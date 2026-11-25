@@ -37,6 +37,7 @@ export default function ReplyThread({
     null,
   );
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+  const [downloadError, setDownloadError] = useState("");
 
   const isCustomer = viewer === "CUSTOMER";
 
@@ -59,6 +60,41 @@ export default function ReplyThread({
       await thread.refetch();
     } finally {
       setIsManualRefreshing(false);
+    }
+  };
+
+  const handleDownloadAttachment = async (attachment: {
+    id: string;
+    originalName: string;
+  }) => {
+    setDownloadError("");
+    try {
+      const response = await fetch(
+        `/api/v1/message/attachments/${encodeURIComponent(attachment.id)}/download`,
+        { credentials: "same-origin" },
+      );
+
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as {
+          message?: string;
+        } | null;
+        setDownloadError(
+          data?.message || "Could not download the attachment.",
+        );
+        return;
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = attachment.originalName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      setDownloadError("Could not download the attachment.");
     }
   };
 
@@ -102,6 +138,12 @@ export default function ReplyThread({
 
       {thread.isError && <p role="alert">Could not load the conversation.</p>}
 
+      {downloadError && (
+        <p role="alert" className="text-sm text-red-700">
+          {downloadError}
+        </p>
+      )}
+
       {thread.isSuccess && messages.length === 0 && <p>No messages yet.</p>}
 
       {!thread.isError && (
@@ -119,8 +161,21 @@ export default function ReplyThread({
                     {formatAuthorLabel(message, currentUserId)}
                   </p>
                   <p className="whitespace-pre-wrap">{message.body}</p>
+
+                  {message.attachment && (
+                    <button
+                      type="button"
+                      className="mt-2 inline-block break-all text-sm font-medium text-blue-700 underline"
+                      onClick={() =>
+                        void handleDownloadAttachment(message.attachment!)
+                      }
+                    >
+                      Download {message.attachment.originalName}
+                    </button>
+                  )}
+
                   <time
-                    className="text-xs text-slate-600"
+                    className="mt-1 block text-xs text-slate-600"
                     dateTime={message.createdAt}
                   >
                     {new Date(message.createdAt).toLocaleString()}
@@ -138,8 +193,21 @@ export default function ReplyThread({
                           {formatAuthorLabel(reply, currentUserId)}
                         </p>
                         <p className="whitespace-pre-wrap">{reply.body}</p>
+
+                        {reply.attachment && (
+                          <button
+                            type="button"
+                            className="mt-2 inline-block break-all text-sm font-medium text-blue-700 underline"
+                            onClick={() =>
+                              void handleDownloadAttachment(reply.attachment!)
+                            }
+                          >
+                            Download {reply.attachment.originalName}
+                          </button>
+                        )}
+
                         <time
-                          className="text-xs text-slate-600"
+                          className="mt-1 block text-xs text-slate-600"
                           dateTime={reply.createdAt}
                         >
                           {new Date(reply.createdAt).toLocaleString()}
@@ -167,6 +235,7 @@ export default function ReplyThread({
                     inquiryId={inquiryId}
                     viewer="CUSTOMER"
                     replyToMessageId={message.id}
+                    onSent={() => setSelectedMessageId(null)}
                   />
                 )}
               </li>

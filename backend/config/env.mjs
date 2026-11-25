@@ -17,6 +17,9 @@ const envSchema = z.object({
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
     ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().positive(),
     FRONTEND_ORIGIN: z.string().url(),
+    CLOUDINARY_CLOUD_NAME: z.string().trim().min(1),
+    CLOUDINARY_API_KEY: z.string().trim().min(1),
+    CLOUDINARY_API_SECRET: z.string().trim().min(1),
 
 });
 
