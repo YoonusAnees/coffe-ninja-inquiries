@@ -7,6 +7,7 @@ import {
   InboxIcon,
   PlusCircleIcon,
   UserIcon,
+  UsersIcon,
 } from "../components/ui/Icons";
 
 export type UserRole = AuthUser["role"];
@@ -130,6 +131,13 @@ export const NAV_ITEMS_BY_ROLE: Record<UserRole, NavItem[]> = {
       mobilePrimary: true,
     },
     {
+      label: "Users",
+      mobileLabel: "Users",
+      to: "/admin/users",
+      icon: UsersIcon,
+      mobilePrimary: true,
+    },
+    {
       label: "Account",
       mobileLabel: "Account",
       to: "/account",
@@ -164,6 +172,7 @@ export function getPageTitle(pathname: string): string {
   if (pathname === "/employee/notifications") return "Notifications";
   if (pathname === "/admin") return "Admin dashboard";
   if (pathname === "/admin/inquiries") return "Admin inquiries";
+  if (pathname === "/admin/users") return "Customers & Employees";
   if (pathname === "/account") return "Account";
   return "InquiryFlow";
 }

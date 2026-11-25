@@ -1,21 +1,62 @@
-import { useState, type FormEvent } from "react";
+import { useState, type SyntheticEvent } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
 import { CenteredSpinner } from "../../components/ui/LoadingState";
 import { useGetMeQuery } from "../../features/auth/authApi";
 import { useCreateInquiryMutation } from "../../features/inquiries/inquiriesApi";
 
+type InquiryFields = {
+  subject: string;
+  description: string;
+};
+
+type FieldName = keyof InquiryFields;
+type FieldErrors = Partial<Record<FieldName, string>>;
+
+function validateInquiryFields(fields: InquiryFields): FieldErrors {
+  const errors: FieldErrors = {};
+  const trimmedSubject = fields.subject.trim();
+  const trimmedDescription = fields.description.trim();
+
+  if (!trimmedSubject) {
+    errors.subject = "Enter a subject for your inquiry.";
+  } else if (trimmedSubject.length > 150) {
+    errors.subject = "Subject must be 150 characters or fewer.";
+  }
+
+  if (!trimmedDescription) {
+    errors.description = "Enter a description of the issue.";
+  } else if (trimmedDescription.length > 5000) {
+    errors.description = "Description must be 5000 characters or fewer.";
+  }
+
+  return errors;
+}
+
 const topicTemplates = [
-  { label: "Order issue", subject: "Issue with my recent order" },
-  { label: "Billing or payment", subject: "Question about billing or payment" },
-  { label: "Account access", subject: "Help with my account access" },
   {
-    label: "Coffee & menu question",
-    subject: "Question about menu or ingredients",
+    label: "Phone screen or battery repair",
+    subject: "Phone screen or battery repair inquiry",
   },
   {
-    label: "Feedback or suggestion",
-    subject: "Feedback for the Coffee Ninja team",
+    label: "Water damage or diagnostics",
+    subject: "Device diagnostics or water damage check",
+  },
+  {
+    label: "Software, unlock, or data recovery",
+    subject: "Software issue, unlock, or data recovery",
+  },
+  {
+    label: "Laptop or tablet repair",
+    subject: "Laptop or tablet hardware repair",
+  },
+  {
+    label: "Repair status, quote, or warranty",
+    subject: "Question about repair status, quote, or warranty",
+  },
+  {
+    label: "Accessories or replacement parts",
+    subject: "Question about replacement parts or accessories",
   },
 ] as const;
 
@@ -26,27 +67,41 @@ export default function NewInquiryPage() {
   const [topic, setTopic] = useState("");
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
+  const [touched, setTouched] = useState<Partial<Record<FieldName, boolean>>>(
+    {},
+  );
+  const [submitted, setSubmitted] = useState(false);
+  const [serverError, setServerError] = useState("");
+
+  const fieldErrors = validateInquiryFields({ subject, description });
+
+  const getVisibleError = (field: FieldName): string | undefined =>
+    submitted || touched[field] ? fieldErrors[field] : undefined;
+
+  const markTouched = (field: FieldName) => {
+    setTouched((prev) => (prev[field] ? prev : { ...prev, [field]: true }));
+  };
 
   const handleTopicChange = (selectedLabel: string) => {
     setTopic(selectedLabel);
     const match = topicTemplates.find((item) => item.label === selectedLabel);
     if (match) {
       setSubject(match.subject);
+      markTouched("subject");
     }
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setErrorMessage("");
+    setSubmitted(true);
+    setServerError("");
+
+    if (Object.keys(fieldErrors).length > 0) {
+      return;
+    }
 
     const trimmedSubject = subject.trim();
     const trimmedDescription = description.trim();
-
-    if (!trimmedSubject || !trimmedDescription) {
-      setErrorMessage("Enter a subject and description.");
-      return;
-    }
 
     try {
       const inquiry = await createInquiry({
@@ -68,11 +123,11 @@ export default function NewInquiryPage() {
       const message = apiError?.data?.message;
 
       if (typeof message === "string" && message.trim()) {
-        setErrorMessage(message);
+        setServerError(message);
         return;
       }
 
-      setErrorMessage("Unable to submit your inquiry. Please try again.");
+      setServerError("Unable to submit your inquiry. Please try again.");
     }
   };
 
@@ -121,6 +176,9 @@ export default function NewInquiryPage() {
     );
   }
 
+  const subjectError = getVisibleError("subject");
+  const descriptionError = getVisibleError("description");
+
   return (
     <main className="mx-auto w-full max-w-5xl space-y-5 px-4 py-6 sm:px-6">
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
@@ -134,7 +192,7 @@ export default function NewInquiryPage() {
             </p>
           </header>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form noValidate onSubmit={handleSubmit} className="space-y-4">
             <label className="block space-y-1 text-sm font-medium text-[#BCD0C4]">
               <span>Topic helper (optional)</span>
               <select
@@ -152,46 +210,90 @@ export default function NewInquiryPage() {
               </select>
             </label>
 
-            <label className="block space-y-1 text-sm font-medium text-[#BCD0C4]">
-              <div className="flex items-center justify-between gap-2">
-                <span>Subject</span>
-                <span className="text-xs font-normal text-[#BCD0C4]">
-                  {subject.length} / 150
-                </span>
-              </div>
-              <input
-                name="subject"
-                maxLength={150}
-                required
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                placeholder="e.g., Missing item from my order or billing question"
-                className="cf-input"
-              />
-            </label>
+            <div>
+              <label
+                htmlFor="subject"
+                className="block space-y-1 text-sm font-medium text-[#BCD0C4]"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span>Subject</span>
+                  <span className="text-xs font-normal text-[#BCD0C4]">
+                    {subject.length} / 150
+                  </span>
+                </div>
+                <input
+                  id="subject"
+                  name="subject"
+                  maxLength={150}
+                  required
+                  value={subject}
+                  onChange={(e) => {
+                    setSubject(e.target.value);
+                    markTouched("subject");
+                  }}
+                  onBlur={() => markTouched("subject")}
+                  aria-invalid={Boolean(subjectError)}
+                  aria-describedby={subjectError ? "subject-error" : undefined}
+                  placeholder="e.g., iPhone 14 cracked screen replacement or repair quote"
+                  className="cf-input"
+                />
+              </label>
+              {subjectError && (
+                <p
+                  id="subject-error"
+                  role="alert"
+                  className="mt-1 text-xs text-rose-300"
+                >
+                  {subjectError}
+                </p>
+              )}
+            </div>
 
-            <label className="block space-y-1 text-sm font-medium text-[#BCD0C4]">
-              <div className="flex items-center justify-between gap-2">
-                <span>Description</span>
-                <span className="text-xs font-normal text-[#BCD0C4]">
-                  {description.length} / 5000
-                </span>
-              </div>
-              <textarea
-                name="description"
-                rows={7}
-                maxLength={5000}
-                required
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Enter your description here — for example: order details, dates, what you expected, and what happened…"
-                className="cf-input"
-              />
-            </label>
+            <div>
+              <label
+                htmlFor="description"
+                className="block space-y-1 text-sm font-medium text-[#BCD0C4]"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span>Description</span>
+                  <span className="text-xs font-normal text-[#BCD0C4]">
+                    {description.length} / 5000
+                  </span>
+                </div>
+                <textarea
+                  id="description"
+                  name="description"
+                  rows={7}
+                  maxLength={5000}
+                  required
+                  value={description}
+                  onChange={(e) => {
+                    setDescription(e.target.value);
+                    markTouched("description");
+                  }}
+                  onBlur={() => markTouched("description")}
+                  aria-invalid={Boolean(descriptionError)}
+                  aria-describedby={
+                    descriptionError ? "description-error" : undefined
+                  }
+                  placeholder="Enter your description here — for example: device model, symptoms, when the issue started, and any troubleshooting already tried…"
+                  className="cf-input"
+                />
+              </label>
+              {descriptionError && (
+                <p
+                  id="description-error"
+                  role="alert"
+                  className="mt-1 text-xs text-rose-300"
+                >
+                  {descriptionError}
+                </p>
+              )}
+            </div>
 
-            {errorMessage && (
+            {serverError && (
               <p role="alert" className="text-sm text-rose-300">
-                {errorMessage}
+                {serverError}
               </p>
             )}
 
@@ -221,8 +323,8 @@ export default function NewInquiryPage() {
                 dropdown).
               </li>
               <li>
-                Include relevant dates, order numbers, or steps you already
-                tried.
+                Include your device model, repair ticket/order number, and
+                troubleshooting steps already tried.
               </li>
               <li>
                 Once submitted, open the inquiry thread to attach files or

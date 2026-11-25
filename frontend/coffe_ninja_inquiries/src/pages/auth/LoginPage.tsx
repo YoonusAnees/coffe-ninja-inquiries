@@ -1,6 +1,7 @@
 import { useState, type SyntheticEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import coffeeNinjaLogo from "../../assets/coffee_ninja_logo.jpg";
+import PasswordInput from "../../components/ui/PasswordInput";
 import { getDashboardPathForRole } from "../../config/navigation";
 import { useLoginMutation } from "../../features/auth/authApi";
 
@@ -74,13 +75,11 @@ export default function LoginPage() {
             >
               Password
             </label>
-            <input
-              type="password"
+            <PasswordInput
               id="password"
               name="password"
               autoComplete="current-password"
               required
-              className="cf-input mt-1"
               placeholder="Enter Your Password"
             />
           </div>
