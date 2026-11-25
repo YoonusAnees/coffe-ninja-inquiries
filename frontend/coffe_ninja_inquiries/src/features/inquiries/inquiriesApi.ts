@@ -6,13 +6,13 @@ export type InquiryPriority = (typeof inquiryPriorities)[number];
 
 type AdminInquiry = InquiryDetails & InquiryAssignment;
 
-
 export type InquiryStatus =
-  | "NEW" | "ASSIGNED" | "IN_PROGRESS" | "WAITING_FOR_CUSTOMER" | "RESOLVED" | "CLOSED";
-
-  
-
-
+  | "NEW"
+  | "ASSIGNED"
+  | "IN_PROGRESS"
+  | "WAITING_FOR_CUSTOMER"
+  | "RESOLVED"
+  | "CLOSED";
 
 export type InquiryAssignment = {
   id: string;
@@ -35,51 +35,46 @@ type AssignInquiryResponse = {
   data: { inquiry: InquiryAssignment };
 };
 
-
 type AssignableEmployee = {
   id: string;
   fullName: string;
 };
 
 type InquirySummary = {
-    id:string;
-    reference:string;
-    subject:string;
-    status:InquiryStatus;
-    createdAt:string;
+  id: string;
+  reference: string;
+  subject: string;
+  status: InquiryStatus;
+  createdAt: string;
 };
 
 type InquiryDetails = InquirySummary & {
-    description:string;
+  description: string;
 };
 
 type CreatedInquiry = InquiryDetails & {
-    priority:InquiryPriority
-}
+  priority: InquiryPriority;
+};
 
 type CreateInquiryInput = {
-    subject:string;
-    description:string;
-}
+  subject: string;
+  description: string;
+};
 
 type AssignedInquiry = InquirySummary & {
-    priority:InquiryPriority;
-}
+  priority: InquiryPriority;
+};
 
 type AssignedInquiryDetails = AssignedInquiry & {
-    description:string;
-      version: number;
-}
-
-
+  description: string;
+  version: number;
+};
 
 type ApiResponse<T> = {
-    success:true;
-    message:string;
-    data:T
-}
-
-
+  success: true;
+  message: string;
+  data: T;
+};
 
 export type EmployeeNextStatus =
   | "IN_PROGRESS"
@@ -108,15 +103,15 @@ type ClosedInquiry = {
   version: number;
 };
 
-
-const inquiryListTag = {type:"Inquiry",id:"LIST"} as const;
+const inquiryListTag = { type: "Inquiry", id: "LIST" } as const;
 
 export const inquiriesApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getMyInquiries: builder.query<InquirySummary[], void>({
       query: () => "inquiry/my",
-      transformResponse: (response: ApiResponse<{ inquiries: InquirySummary[] }>) =>
-        response.data.inquiries,
+      transformResponse: (
+        response: ApiResponse<{ inquiries: InquirySummary[] }>,
+      ) => response.data.inquiries,
       providesTags: [inquiryListTag],
     }),
 
@@ -133,106 +128,106 @@ export const inquiriesApi = baseApi.injectEndpoints({
         method: "POST",
         body,
       }),
-      transformResponse: (response: ApiResponse<{ inquiry: CreatedInquiry }>) =>
-        response.data.inquiry,
+      transformResponse: (
+        response: ApiResponse<{ inquiry: CreatedInquiry }>,
+      ) => response.data.inquiry,
       invalidatesTags: (_result, error) => (error ? [] : [inquiryListTag]),
     }),
+
     assignInquiry: builder.mutation<AssignInquiryResponse, AssignInquiryInput>({
-  query: ({ inquiryId, employeeId, priority, version }) => ({
-    url: `inquiry/${inquiryId}/assignment`,
-    method: "PATCH",
-    body: { employeeId, priority, version },
+      query: ({ inquiryId, employeeId, priority, version }) => ({
+        url: `inquiry/${inquiryId}/assignment`,
+        method: "PATCH",
+        body: { employeeId, priority, version },
+      }),
+      invalidatesTags: (_result, error) => (error ? [] : ["Inquiry"]),
+    }),
+
+    getAdminInquiries: builder.query<AdminInquiry[], void>({
+      query: () => "inquiry/admin",
+      transformResponse: (
+        response: ApiResponse<{ inquiries: AdminInquiry[] }>,
+      ) => response.data.inquiries,
+      providesTags: [inquiryListTag],
+    }),
+
+    getAssignableEmployees: builder.query<AssignableEmployee[], void>({
+      query: () => "inquiry/get-employee",
+      transformResponse: (
+        response: ApiResponse<{ employees: AssignableEmployee[] }>,
+      ) => response.data.employees,
+    }),
+
+    getAssignedInquiries: builder.query<AssignedInquiry[], void>({
+      query: () => "inquiry/assigned",
+      transformResponse: (
+        response: ApiResponse<{ inquiries: AssignedInquiry[] }>,
+      ) => response.data.inquiries,
+      providesTags: [inquiryListTag],
+    }),
+
+    getAssignedInquiry: builder.query<AssignedInquiryDetails, string>({
+      query: (id) => `inquiry/assigned/${encodeURIComponent(id)}`,
+      transformResponse: (
+        response: ApiResponse<{ inquires: AssignedInquiryDetails }>,
+      ) => response.data.inquires,
+      providesTags: (_result, _error, id) => [{ type: "Inquiry", id }],
+    }),
+
+    updateAssignedStatus: builder.mutation<  AssignedInquiryDetails,  UpdateAssignedStatusInput>({
+      query: ({ inquiryId, status, version }) => ({
+        url: `inquiry/assigned/${encodeURIComponent(inquiryId)}/status`,
+        method: "PATCH",
+        body: { status, version },
+      }),
+      transformResponse: (
+        response: ApiResponse<{ inquiry: AssignedInquiryDetails }>,
+      ) => response.data.inquiry,
+      invalidatesTags: (_result, error, { inquiryId }) =>
+        error
+          ? []
+          : [
+              inquiryListTag,
+              { type: "Inquiry", id: inquiryId },
+              { type: "Inquiry" as const, id: "EMPLOYEE_WORKLOAD" },
+            ],
+    }),
+
+    reopenInquiry: builder.mutation<ResolvedInquiryActionInput,ReopenInquiryInput>({
+      query: ({ inquiryId, version }) => ({
+        url: `inquiry/${encodeURIComponent(inquiryId)}/reopen`,
+        method: "PATCH",
+        body: { version },
+      }),
+      transformResponse: (
+        response: ApiResponse<{ inquiry: ResolvedInquiryActionInput }>,
+      ) => response.data.inquiry,
+      invalidatesTags: (_result, error) => {
+        if (!error || error.status === 409) {
+          return ["Inquiry"];
+        }
+
+        return [];
+      },
+    }),
+
+    closeInquiry: builder.mutation<ClosedInquiry, ResolvedInquiryActionInput>({
+      query: ({ inquiryId, version }) => ({
+        url: `inquiry/${encodeURIComponent(inquiryId)}/close`,
+        method: "PATCH",
+        body: { version },
+      }),
+      transformResponse: (response: ApiResponse<{ inquiry: ClosedInquiry }>) =>
+        response.data.inquiry,
+      invalidatesTags: (_result, error) => {
+        if (!error || error.status === 409) {
+          return ["Inquiry"];
+        }
+
+        return [];
+      },
+    }),
   }),
-  invalidatesTags: (_result, error) => (error ? [] : ["Inquiry"]),
-}),
-
-getAdminInquiries: builder.query<AdminInquiry[], void>({
-  query: () => "inquiry/admin",
-  transformResponse: (response: ApiResponse<{ inquiries: AdminInquiry[] }>) =>
-    response.data.inquiries,
-  providesTags: [inquiryListTag],
-}),
-
-getAssignableEmployees: builder.query<AssignableEmployee[], void>({
-  query: () => "inquiry/get-employee",
-  transformResponse: (
-    response: ApiResponse<{ employees: AssignableEmployee[] }>,
-  ) => response.data.employees,
-}),
-
-getAssignedInquiries:builder.query<AssignedInquiry[],void>({
-    query:()=>"inquiry/assigned",
-    transformResponse:(response:ApiResponse<{inquiries:AssignedInquiry[]}>)=>
-        response.data.inquiries,
-    providesTags:[inquiryListTag],
-}),
-getAssignedInquiry: builder.query<AssignedInquiryDetails, string>({
-  query: (id) => `inquiry/assigned/${encodeURIComponent(id)}`,
-  transformResponse: (
-    response: ApiResponse<{ inquires: AssignedInquiryDetails }>,
-  ) => response.data.inquires,
-  providesTags: (_result, _error, id) => [{ type: "Inquiry", id }],
-}),
-
-updateAssignedStatus: builder.mutation<AssignedInquiryDetails,  UpdateAssignedStatusInput>({
-  query: ({ inquiryId, status, version }) => ({
-    url: `inquiry/assigned/${encodeURIComponent(inquiryId)}/status`,
-    method: "PATCH",
-    body: { status, version },
-  }),
-  transformResponse: (
-    response: ApiResponse<{ inquiry: AssignedInquiryDetails }>,
-  ) => response.data.inquiry,
-  invalidatesTags: (_result, error, { inquiryId }) =>
-    error
-      ? []
-      : [inquiryListTag, { type: "Inquiry", id: inquiryId }],
-}),
-
-reopenInquiry: builder.mutation<ResolvedInquiryActionInput, ReopenInquiryInput>({
-  query: ({ inquiryId, version }) => ({
-    url: `inquiry/${encodeURIComponent(inquiryId)}/reopen`,
-    method: "PATCH",
-    body: { version },
-  }),
-
-  transformResponse: (
-    response: ApiResponse<{ inquiry: ResolvedInquiryActionInput }>,
-  ) => response.data.inquiry,
-
-  invalidatesTags: (_result, error) => {
-    if (!error || error.status === 409) {
-      return ["Inquiry"];
-    }
-
-    return [];
-  },
-}),
-
-closeInquiry: builder.mutation<ClosedInquiry, ResolvedInquiryActionInput>({
-  query: ({ inquiryId, version }) => ({
-    url: `inquiry/${encodeURIComponent(inquiryId)}/close`,
-    method: "PATCH",
-    body: { version },
-  }),
-
-  transformResponse: (response: ApiResponse<{ inquiry: ClosedInquiry }>) =>
-    response.data.inquiry,
-
-  invalidatesTags: (_result, error) => {
-    if (!error || error.status === 409) {
-      return ["Inquiry"];
-    }
-
-    return [];
-  },
-}),
-
-
-
-  }),
-
-  
 });
 
 export const {
@@ -246,8 +241,5 @@ export const {
   useGetAssignedInquiryQuery,
   useUpdateAssignedStatusMutation,
   useReopenInquiryMutation,
-  useCloseInquiryMutation 
-
-  
-  
+  useCloseInquiryMutation,
 } = inquiriesApi;

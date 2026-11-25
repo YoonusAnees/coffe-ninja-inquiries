@@ -6,6 +6,8 @@ import {
   useGetAssignableEmployeesQuery,
 } from "../../features/inquiries/inquiriesApi";
 import ResolvedInquiryActions from "./ResolvedInquiryActions";
+import EmployeeWorkloadTable from "../../components/report/EmployeeWorkloadTable";
+import InquiryStatusSummary from "../../components/report/InquiryStatusSummary";
 
 export default function AdminInquiriesPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -19,6 +21,8 @@ export default function AdminInquiriesPage() {
   return (
     <main className="mx-auto max-w-5xl space-y-6 px-6 py-8">
       <h1 className="text-2xl font-semibold">Admin Inquiries</h1>
+      <InquiryStatusSummary />
+      <EmployeeWorkloadTable />
 
       {queue.isLoading && <p role="status">Loading inquiries…</p>}
 
