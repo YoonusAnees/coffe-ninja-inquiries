@@ -14,7 +14,7 @@ app.set("trust proxy", 1);
 
 const allowedOrigins = new Set([
     new URL(env.FRONTEND_ORIGIN).origin,
-    "https://coffe-ninja-inquiries.vercel.app",
+    "http://localhost:5173",
 ]);
 
 app.use((req, res, next) => {

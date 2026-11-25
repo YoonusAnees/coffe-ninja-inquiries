@@ -14,8 +14,8 @@ export const apiLimiter = rateLimit({
 });
 
 export const loginLimiter = rateLimit({
-    windowMs: 15 * minute,
-    limit: 10,
+    windowMs: 5 * minute,
+    limit: 30,
     skipSuccessfulRequests: true,
     standardHeaders: "draft-8",
     legacyHeaders: false,
@@ -26,7 +26,7 @@ export const loginLimiter = rateLimit({
 });
 
 export const registerLimiter = rateLimit({
-    windowMs: 60 * minute,
+    windowMs: 10 * minute,
     limit: 5,
     standardHeaders: "draft-8",
     legacyHeaders: false,
@@ -37,8 +37,8 @@ export const registerLimiter = rateLimit({
 });
 
 export const add = rateLimit({
-    windowMs: 60 * minute,
-    limit: 5,
+    windowMs: 5 * minute,
+    limit: 50,
     standardHeaders: "draft-8",
     legacyHeaders: false,
     message: {
