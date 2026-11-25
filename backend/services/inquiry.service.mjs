@@ -1,6 +1,6 @@
 import { and, asc, desc, eq } from "drizzle-orm";
 import { db } from "../config/db/db.mjs"
-import { inquiries, inquiryPriorityEnum } from "../config/db/schema/schema.inquiries.mjs";
+import { inquiries, inquiryPriorityEnum, inquiryStatusEnum } from "../config/db/schema/schema.inquiries.mjs";
 import { z } from "zod"
 import AppError from "../utils/AppError.mjs";
 import { customer } from "../config/db/schema/schema.customers.mjs";
@@ -10,6 +10,26 @@ import { assignments } from "../config/db/schema/schema.assignments.mjs";
 import { statusHistory } from "../config/db/schema/schema.statusHistory.mjs";
 import { notifications } from "../config/db/schema/schema.notifications.mjs";
 import { notifyEmployeeInboxChanged } from "../config/notificationSocket.mjs";
+import { APIHelper } from "../utils/apiHelper.mjs";
+import { paginationSchema } from "../utils/pagination.mjs";
+
+
+
+const myInquiryQuerySchema = paginationSchema.extend({
+    search: z.string().trim().max(150).optional(),
+    status: z.enum(inquiryStatusEnum.enumValues).optional(),
+}).strict();
+
+const assignableEmployeeQuerySchema = paginationSchema.extend({
+    search: z.string().trim().max(150).optional(),
+}).strict();
+
+const assignedInquiryQuerySchema = paginationSchema.extend({
+    search: z.string().trim().max(150).optional(),
+    status: z.enum(inquiryStatusEnum.enumValues).optional(),
+    priority: z.enum(inquiryPriorityEnum.enumValues).optional(),
+}).strict();
+
 
 const createInquirySchema = z.object({
     subject: z.string().trim().min(1).max(150),
@@ -78,7 +98,8 @@ export const createInqury = async (customerId, data) => {
 };
 
 
-export const listMyInquiries = async (customerId) => {
+export const listMyInquiries = async (customerId, queryString = {}) => {
+    const params = myInquiryQuerySchema.parse(queryString);
     const inquiry = await db
         .select({
             id: inquiries.id,
@@ -91,7 +112,17 @@ export const listMyInquiries = async (customerId) => {
         .where(eq(inquiries.customerId, customerId))
         .orderBy(desc(inquiries.createdAt), desc(inquiries.number));
 
-    return inquiry.map(formatInquiry);
+    const customerOwnsInquiry = eq(inquiries.customerId, customerId);
+
+    const result = await new APIHelper(query, params, [customerOwnsInquiry])
+        .search(inquiries.subject)
+        .filter({ status: inquiries.status })
+        .pagination();
+
+    return {
+        inquiries: result.rows.map(formatInquiry),
+        pagination: result.pagination,
+    };
 }
 
 export const getMyInquryById = async (customerId, dataId) => {
@@ -142,8 +173,9 @@ export const inquriesAdmin = async () => {
 }
 
 
-export const listAssignableEmployee = async () => {
-    return db
+export const listAssignableEmployee = async (queryString = {}) => {
+    const params = assignableEmployeeQuerySchema.parse(queryString);
+    const query = db
         .select({
             id: users.id,
             fullName: employee.fullName,
@@ -151,11 +183,19 @@ export const listAssignableEmployee = async () => {
         })
         .from(employee)
         .innerJoin(users, eq(users.id, employee.userId))
-        .where(and(
-            eq(users.role, "EMPLOYEE"),
-            eq(users.isActive, true)
-        ))
         .orderBy(asc(employee.fullName), asc(users.id));
+
+    const result = await new APIHelper(query, params, [
+        eq(users.role, "EMPLOYEE"),
+        eq(users.isActive, true),
+    ])
+        .search(employee.fullName)
+        .pagination();
+
+    return {
+        employees: result.rows,
+        pagination: result.pagination,
+    };
 }
 
 
@@ -258,8 +298,9 @@ export const assignInquiry = async (inquiryId, adminId, data) => {
 };
 
 
-export const getAssignedInquires = async (employeeId) => {
-    const inquiry = await db
+export const getAssignedInquires = async (employeeId, queryString = {}) => {
+    const params = assignedInquiryQuerySchema.parse(queryString);
+    const query = db
         .select({
             id: inquiries.id,
             number: inquiries.number,
@@ -269,10 +310,22 @@ export const getAssignedInquires = async (employeeId) => {
             createdAt: inquiries.createdAt
         })
         .from(inquiries)
-        .where(eq(inquiries.assignedEmployeeId, employeeId))
-        .orderBy(desc(inquiries.createdAt), desc(inquiries.number))
+        .orderBy(desc(inquiries.createdAt), desc(inquiries.number));
 
-    return inquiry.map(formatInquiry)
+    const result = await new APIHelper(query, params, [
+        eq(inquiries.assignedEmployeeId, employeeId),
+    ])
+        .search(inquiries.subject)
+        .filter({
+            status: inquiries.status,
+            priority: inquiries.priority,
+        })
+        .pagination();
+
+    return {
+        inquiries: result.rows.map(formatInquiry),
+        pagination: result.pagination,
+    };
 }
 
 export const getAssignedInquiry = async (inquiryId, employeeId) => {

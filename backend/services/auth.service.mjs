@@ -5,6 +5,16 @@ import { users } from "../config/db/schema/schema.users.mjs";
 import { comparePassword, hashPassword } from "../utils/password.mjs";
 import AppError from "../utils/AppError.mjs";
 import { asc, desc, eq } from "drizzle-orm"
+import { APIHelper } from "../utils/apiHelper.mjs";
+import { paginationSchema } from "../utils/pagination.mjs";
+
+const listCustomersQuerySchema = paginationSchema.extend({
+    search: z.string().trim().max(150).optional(),
+    isActive: z
+        .enum(["true", "false"])
+        .transform((value) => value === "true")
+        .optional(),
+}).strict();
 
 const registerSchema = z.object({
     fullName: z.string().trim().min(1).max(150),
@@ -107,8 +117,9 @@ export const getCurrentUser = (auth) => {
     };
 };
 
-export const listAllCustomers = () => {
-    return db
+export const listAllCustomers = async (queryString = {}) => {
+    const params = listCustomersQuerySchema.parse(queryString);
+    const query = db
         .select({
             id: users.id,
             fullName: customer.fullName,
@@ -119,6 +130,46 @@ export const listAllCustomers = () => {
         })
         .from(customer)
         .innerJoin(users, eq(users.id, customer.userId))
-        .where(eq(users.role, "CUSTOMER"))
         .orderBy(desc(users.createdAt), asc(users.id));
+
+    const result = await new APIHelper(query, params, [
+        eq(users.role, "CUSTOMER"),
+    ])
+        .search(customer.fullName)
+        .filter({ isActive: users.isActive })
+        .pagination();
+
+    return {
+        customers: result.rows,
+        pagination: result.pagination,
+    };
+};
+
+
+export const listAllEmployee = async (queryString = {}) => {
+    const params = listCustomersQuerySchema.parse(queryString);
+    const query = db
+        .select({
+            id: users.id,
+            fullName: customer.fullName,
+            email: users.email,
+            phone: customer.phone,
+            isActive: users.isActive,
+            createdAt: users.createdAt,
+        })
+        .from(customer)
+        .innerJoin(users, eq(users.id, customer.userId))
+        .orderBy(desc(users.createdAt), asc(users.id));
+
+    const result = await new APIHelper(query, params, [
+        eq(users.role, "EMPLOYEE"),
+    ])
+        .search(customer.fullName)
+        .filter({ isActive: users.isActive })
+        .pagination();
+
+    return {
+        customers: result.rows,
+        pagination: result.pagination,
+    };
 };

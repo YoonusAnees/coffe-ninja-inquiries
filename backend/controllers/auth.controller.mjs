@@ -69,13 +69,13 @@ export const myProfile = async (req, res, next) => {
 export const getAllCustomer = async (req, res, next) => {
     try {
 
-        const user = await listAllCustomers();
+        const { customers, pagination } = await listAllCustomers(req.query);
         res.set("Cache-Control", "no-store");
 
         return res.status(200).json({
             success: true,
             message: "Customers Fetched",
-            data: { user },
+            data: { user: customers, pagination },
         });
 
 
