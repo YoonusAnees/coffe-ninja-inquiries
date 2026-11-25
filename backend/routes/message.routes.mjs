@@ -11,20 +11,22 @@ import {
     getEmployeeNotes,
     getEmployeeOwnMessages,
 } from "../controllers/message.controller.mjs";
+import { add } from "../middlewares/rateLimit.mjs";
+
 
 const router = Router();
 
 // Customer public replies
-router.post("/:id/replies", verifyUser, rolebasedAccess("CUSTOMER"), parseReplyAttachment, customerSend);
+router.post("/:id/replies", verifyUser, rolebasedAccess("CUSTOMER"),add, parseReplyAttachment, customerSend);
 router.get("/:id/replies", verifyUser, rolebasedAccess("CUSTOMER"), getCustomerReplies);
 
 // Employee public replies
-router.post("/assigned/:id/replies", verifyUser, rolebasedAccess("EMPLOYEE"), parseReplyAttachment, employeeSendReply);
+router.post("/assigned/:id/replies", verifyUser, rolebasedAccess("EMPLOYEE"),add, parseReplyAttachment, employeeSendReply);
 router.get("/assigned/:id/replies", verifyUser, rolebasedAccess("EMPLOYEE"), getEmployeeOwnMessages);
 
 // Employee internal notes
 router.get("/assigned/:id/notes", verifyUser, rolebasedAccess("EMPLOYEE"), getEmployeeNotes);
-router.post("/assigned/:id/notes", verifyUser, rolebasedAccess("EMPLOYEE"), employeeAddNote);
+router.post("/assigned/:id/notes", verifyUser, rolebasedAccess("EMPLOYEE"),add, employeeAddNote);
 
 router.get("/attachments/:attachmentId/download", verifyUser, rolebasedAccess("CUSTOMER", "EMPLOYEE"), downloadAttachment,);
 
