@@ -6,13 +6,36 @@ export type InquiryPriority = (typeof inquiryPriorities)[number];
 
 type AdminInquiry = InquiryDetails & InquiryAssignment;
 
-export type InquiryStatus =
-  | "NEW"
-  | "ASSIGNED"
-  | "IN_PROGRESS"
-  | "WAITING_FOR_CUSTOMER"
-  | "RESOLVED"
-  | "CLOSED";
+export const inquiryStatuses = [
+  "NEW",
+  "ASSIGNED",
+  "IN_PROGRESS",
+  "WAITING_FOR_CUSTOMER",
+  "RESOLVED",
+  "CLOSED",
+] as const;
+
+export type InquiryStatus = (typeof inquiryStatuses)[number];
+
+export type PaginationMeta = {
+  page: number;
+  limit: number;
+  hasNextPage: boolean;
+};
+
+export type AssignableEmployeesQueryParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+};
+
+export type AssignedInquiriesQueryParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: InquiryStatus;
+  priority?: InquiryPriority;
+};
 
 export type InquiryAssignment = {
   id: string;
@@ -151,18 +174,37 @@ export const inquiriesApi = baseApi.injectEndpoints({
       providesTags: [inquiryListTag],
     }),
 
-    getAssignableEmployees: builder.query<AssignableEmployee[], void>({
-      query: () => "inquiry/get-employee",
+    getAssignableEmployees: builder.query<
+      AssignableEmployee[],
+      AssignableEmployeesQueryParams | void
+    >({
+      query: (params) =>
+        params
+          ? { url: "inquiry/get-employee", params }
+          : "inquiry/get-employee",
       transformResponse: (
-        response: ApiResponse<{ employees: AssignableEmployee[] }>,
+        response: ApiResponse<{
+          employees: AssignableEmployee[];
+          pagination: PaginationMeta;
+        }>,
       ) => response.data.employees,
     }),
 
-    getAssignedInquiries: builder.query<AssignedInquiry[], void>({
-      query: () => "inquiry/assigned",
+    getAssignedInquiries: builder.query<
+      { inquiries: AssignedInquiry[]; pagination: PaginationMeta },
+      AssignedInquiriesQueryParams | void
+    >({
+      query: (params) =>
+        params ? { url: "inquiry/assigned", params } : "inquiry/assigned",
       transformResponse: (
-        response: ApiResponse<{ inquiries: AssignedInquiry[] }>,
-      ) => response.data.inquiries,
+        response: ApiResponse<{
+          inquiries: AssignedInquiry[];
+          pagination: PaginationMeta;
+        }>,
+      ) => ({
+        inquiries: response.data.inquiries,
+        pagination: response.data.pagination,
+      }),
       providesTags: [inquiryListTag],
     }),
 

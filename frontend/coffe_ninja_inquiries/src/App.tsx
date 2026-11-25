@@ -12,6 +12,7 @@ import EmployeeLayout from "./pages/employee/EmployeeLayout";
 import AssignedInquiriesPage from "./pages/employee/AssignedInquiriesPage";
 import AssignedInquiryDetailsPage from "./pages/employee/AssignedInquiryDetailsPage";
 import NotificationsPage from "./pages/employee/NotificationsPage";
+import NotFoundPage from "./pages/NotFoundPage";
 
 function App() {
   return (
@@ -39,6 +40,8 @@ function App() {
           />
           <Route path="notifications" element={<NotificationsPage />} />
         </Route>
+
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   );

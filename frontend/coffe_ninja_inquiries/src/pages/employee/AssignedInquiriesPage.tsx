@@ -1,16 +1,38 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useGetAssignedInquiriesQuery } from "../../features/inquiries/inquiriesApi";
+import {
+  inquiryPriorities,
+  inquiryStatuses,
+  useGetAssignedInquiriesQuery,
+  type InquiryPriority,
+  type InquiryStatus,
+} from "../../features/inquiries/inquiriesApi";
 
 export default function AssignedInquiriesPage() {
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<InquiryStatus | "">("");
+  const [priority, setPriority] = useState<InquiryPriority | "">("");
+  const [page, setPage] = useState(1);
+
+  const trimmedSearch = search.trim();
 
   const {
-    data: inquiries = [],
+    data,
     isLoading,
+    isFetching,
     isError,
     refetch,
-  } = useGetAssignedInquiriesQuery();
+  } = useGetAssignedInquiriesQuery({
+    page,
+    limit: 10,
+    ...(trimmedSearch ? { search: trimmedSearch } : {}),
+    ...(status ? { status } : {}),
+    ...(priority ? { priority } : {}),
+  });
+
+  const inquiries = data?.inquiries ?? [];
+  const pagination = data?.pagination;
 
   const handleRefresh = async () => {
     if (isManualRefreshing) return;
@@ -40,6 +62,54 @@ export default function AssignedInquiriesPage() {
         </button>
       </header>
 
+      <div className="grid gap-3 sm:grid-cols-3">
+        <input
+          type="search"
+          aria-label="Search assigned inquiries"
+          placeholder="Search by subject…"
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          className="rounded border px-3 py-2"
+        />
+
+        <select
+          aria-label="Filter by status"
+          value={status}
+          onChange={(e) => {
+            setStatus(e.target.value as InquiryStatus | "");
+            setPage(1);
+          }}
+          className="rounded border px-3 py-2"
+        >
+          <option value="">All statuses</option>
+          {inquiryStatuses.map((item) => (
+            <option key={item} value={item}>
+              {item.replaceAll("_", " ")}
+            </option>
+          ))}
+        </select>
+
+        <select
+          aria-label="Filter by priority"
+          value={priority}
+          onChange={(e) => {
+            setPriority(e.target.value as InquiryPriority | "");
+            setPage(1);
+          }}
+          className="rounded border px-3 py-2"
+        >
+          <option value="">All priorities</option>
+          {inquiryPriorities.map((item) => (
+            <option key={item} value={item}>
+              {item}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {isLoading ? (
         <p role="status">Loading assigned inquiries…</p>
       ) : isError ? (
@@ -66,6 +136,30 @@ export default function AssignedInquiriesPage() {
             </li>
           ))}
         </ul>
+      )}
+
+      {!isLoading && !isError && (inquiries.length > 0 || page > 1) && (
+        <div className="flex items-center justify-between gap-3 pt-2">
+          <button
+            type="button"
+            className="rounded border px-3 py-2 disabled:opacity-50"
+            disabled={page <= 1 || isFetching}
+            onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+          >
+            Previous
+          </button>
+
+          <span className="text-sm text-slate-600">Page {page}</span>
+
+          <button
+            type="button"
+            className="rounded border px-3 py-2 disabled:opacity-50"
+            disabled={!pagination?.hasNextPage || isFetching}
+            onClick={() => setPage((prev) => prev + 1)}
+          >
+            Next
+          </button>
+        </div>
       )}
     </main>
   );
