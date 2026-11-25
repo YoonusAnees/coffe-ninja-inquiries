@@ -12,6 +12,7 @@ import { io } from "socket.io-client";
 
 import coffeeNinjaLogo from "../../assets/coffee_ninja_logo.jpg";
 import { baseApi } from "../../app/baseApi";
+import { API_ORIGIN } from "../../config/env";
 import {
   NAV_ITEMS_BY_ROLE,
   getNotificationsPathForRole,
@@ -41,8 +42,9 @@ function useNotificationSync(userId: string, role: UserRole) {
   useEffect(() => {
     if (!hasNotifications) return;
 
-    const socket = io({
+    const socket = io(API_ORIGIN || undefined, {
       autoConnect: false,
+      withCredentials: true,
       transports: ["websocket"],
     });
 
