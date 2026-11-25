@@ -11,7 +11,8 @@ import { users } from "./schema.users.mjs";
 import { messages } from "./schema.messages.mjs";
 export const notificationTypeEnum = pgEnum("notification_type", [
     "INQUIRY_ASSIGNED",
-    "CUSTOMER_REPLIED"
+    "CUSTOMER_REPLIED",
+    "EMPLOYEE_REPLIED"
 ]);
 
 export const notifications = pgTable(

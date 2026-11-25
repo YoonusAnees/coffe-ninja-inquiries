@@ -7,6 +7,7 @@ import { env } from "./env.mjs";
 let io;
 
 const employeeRoom = (userId) => `employee:${userId}`;
+const customerRoom = (userId) => `customer:${userId}`;
 
 export const attachNotificationSocket = (httpServer) => {
     io = new Server(httpServer, {
@@ -22,19 +23,23 @@ export const attachNotificationSocket = (httpServer) => {
     io.engine.use(verifyUser);
 
     io.use((socket, next) => {
+
         const user = socket.request.user;
 
-        if (!user || user.role !== "EMPLOYEE") {
-            return next(new Error("Employee access required."));
+        if (!user || !["CUSTOMER", "EMPLOYEE"].includes(user.role)) {
+            return next(new Error("A customer or employee account is required."));
         }
 
         return next();
     });
 
     io.on("connection", async (socket) => {
-        const userId = socket.request.user.id;
+        const user = socket.request.user;
 
-        await socket.join(employeeRoom(userId));
+        const room = user.role === "CUSTOMER"
+            ? customerRoom(user.id)
+            : employeeRoom(user.id);
+        await socket.join(room)
         socket.emit("notifications:ready");
     });
 };
@@ -48,5 +53,11 @@ export const notifyEmployeeInboxChanged = (employeeId) => {
 export const notifyEmployeeOfCustomerReply = (employeeId) => {
     if (io) {
         io.to(employeeRoom(employeeId)).emit("customer-reply:created");
+    }
+};
+
+export const notifyCustomerOfEmployeeReply = (customerId) => {
+    if (io) {
+        io.to(customerRoom(customerId)).emit("employee-reply:created");
     }
 };

@@ -8,7 +8,7 @@ import { users } from "../config/db/schema/schema.users.mjs";
 import AppError from "../utils/AppError.mjs";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { notifications } from "../config/db/schema/schema.notifications.mjs";
-import { notifyEmployeeOfCustomerReply } from "../config/notificationSocket.mjs";
+import { notifyEmployeeOfCustomerReply, notifyCustomerOfEmployeeReply } from "../config/notificationSocket.mjs";
 
 const inquiryIdSchema = z.string().uuid();
 
@@ -40,10 +40,12 @@ const createMessage = async ({
     isCustomerReply = false,
 }) => {
     const id = inquiryIdSchema.parse(inquiryId);
+
     const result = await db.transaction(async (tx) => {
         const [inquiry] = await tx
             .select({
                 status: inquiries.status,
+                customerId: inquiries.customerId,
                 assignedEmployeeId: inquiries.assignedEmployeeId,
             })
             .from(inquiries)
@@ -98,14 +100,27 @@ const createMessage = async ({
             .values({ inquiryId: id, authorId, body, visibility, replyToMessageId })
             .returning({ id: messages.id });
 
-        const recipientId = isCustomerReply ? inquiry.assignedEmployeeId : null;
+        let notification = null;
 
-        if (recipientId) {
+        if (visibility === "PUBLIC") {
+            if (isCustomerReply && inquiry.assignedEmployeeId) {
+                notification = {
+                    recipientId: inquiry.assignedEmployeeId,
+                    type: "CUSTOMER_REPLIED",
+                };
+            } else if (!isCustomerReply) {
+                notification = {
+                    recipientId: inquiry.customerId,
+                    type: "EMPLOYEE_REPLIED",
+                };
+            }
+        }
+
+        if (notification) {
             await tx.insert(notifications).values({
-                recipientId,
+                ...notification,
                 inquiryId: id,
                 messageId: inserted.id,
-                type: "CUSTOMER_REPLIED",
             });
         }
 
@@ -118,14 +133,20 @@ const createMessage = async ({
             .where(eq(messages.id, inserted.id))
             .limit(1);
 
-        return { message: createdMessage, recipientId };
+        return { message: createdMessage, notification };
     });
 
-    if (result.recipientId) {
-        notifyEmployeeOfCustomerReply(result.recipientId);
+    const { message, notification } = result;
+
+    if (notification) {
+        if (notification.type === "EMPLOYEE_REPLIED") {
+            notifyCustomerOfEmployeeReply(notification.recipientId);
+        } else {
+            notifyEmployeeOfCustomerReply(notification.recipientId);
+        }
     }
 
-    return result.message;
+    return message;
 };
 
 
