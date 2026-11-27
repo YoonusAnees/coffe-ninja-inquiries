@@ -1,7 +1,7 @@
 import cookieParser from "cookie-parser";
 import { Server } from "socket.io";
 
-import { verifyUser } from "../middlewares/authenticate.mjs";
+import { resolveUserFromToken } from "../middlewares/authenticate.mjs";
 import { allowedOrigins } from "./cors.mjs";
 
 let io;
@@ -20,17 +20,25 @@ export const attachNotificationSocket = (httpServer) => {
     });
 
     io.engine.use(cookieParser());
-    io.engine.use(verifyUser);
 
-    io.use((socket, next) => {
+    io.use(async (socket, next) => {
+        try {
+            const cookieToken = socket.request.cookies?.token;
+            const authToken =
+                typeof socket.handshake.auth?.token === "string"
+                    ? socket.handshake.auth.token
+                    : null;
+            const user = await resolveUserFromToken(cookieToken || authToken);
 
-        const user = socket.request.user;
+            if (!["CUSTOMER", "EMPLOYEE"].includes(user.role)) {
+                return next(new Error("A customer or employee account is required."));
+            }
 
-        if (!user || !["CUSTOMER", "EMPLOYEE"].includes(user.role)) {
-            return next(new Error("A customer or employee account is required."));
+            socket.request.user = user;
+            return next();
+        } catch (error) {
+            return next(error);
         }
-
-        return next();
     });
 
     io.on("connection", async (socket) => {

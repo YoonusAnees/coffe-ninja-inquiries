@@ -1,4 +1,5 @@
 import { baseApi } from "../../app/baseApi";
+import { clearAuthToken, setAuthToken } from "../../utils/authToken";
 
 export type AuthUser = {
   id: string;
@@ -86,14 +87,31 @@ export const authApi = baseApi.injectEndpoints({
       transformResponse: (
         response: MessageResponse & {
           data: AuthUser | { user: AuthUser };
+          token?: string;
         },
-      ) => ("user" in response.data ? response.data.user : response.data),
+      ) => {
+        if (response.token) {
+          setAuthToken(response.token);
+        }
+        return "user" in response.data ? response.data.user : response.data;
+      },
       invalidatesTags: (_result, error) => (error ? [] : ["CurrentUser"]),
     }),
 
     getMe: builder.query<AuthUser, void>({
       query: () => "profile",
       transformResponse: (response: UserResponse) => response.data.user,
+      async onQueryStarted(_arg, { queryFulfilled }) {
+        try {
+          await queryFulfilled;
+        } catch (err) {
+          const status = (err as { error?: { status?: number } })?.error
+            ?.status;
+          if (status === 401) {
+            clearAuthToken();
+          }
+        }
+      },
       providesTags: ["CurrentUser"],
     }),
 
@@ -106,9 +124,12 @@ export const authApi = baseApi.injectEndpoints({
         try {
           await queryFulfilled;
         } catch {
+          clearAuthToken();
+          dispatch(baseApi.util.resetApiState());
           return;
         }
 
+        clearAuthToken();
         dispatch(baseApi.util.resetApiState());
       },
     }),

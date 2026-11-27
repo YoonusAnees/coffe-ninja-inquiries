@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { API_BASE_URL, API_CREDENTIALS } from "../../config/env";
+import { getAuthToken } from "../../utils/authToken";
 import {
   useGetCustomerInquiryRepliesQuery,
   useGetEmployeeInquiryRepliesQuery,
@@ -71,9 +72,13 @@ export default function ReplyThread({
   }) => {
     setDownloadError("");
     try {
+      const token = getAuthToken();
       const response = await fetch(
         `${API_BASE_URL}message/attachments/${encodeURIComponent(attachment.id)}/download`,
-        { credentials: API_CREDENTIALS },
+        {
+          credentials: API_CREDENTIALS,
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        },
       );
 
       if (!response.ok) {

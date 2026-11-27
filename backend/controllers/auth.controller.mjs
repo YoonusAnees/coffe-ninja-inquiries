@@ -1,4 +1,5 @@
 import { registerUser, loginUser, getCurrentUser, listAllCustomers, listAllEmployee, setEmployeeActiveStatus } from "../services/auth.service.mjs";
+import { extractRequestToken } from "../middlewares/authenticate.mjs";
 import { authCookiesOptions, buildTokenCookie } from "../utils/jwtToken.mjs";
 import AppError from "../utils/AppError.mjs";
 
@@ -36,7 +37,7 @@ export const login = async (req, res, next) => {
 
 
 export const logout = async (req, res, next) => {
-    const { token } = req.cookies;
+    const token = extractRequestToken(req);
     if (!token) {
         return next(new AppError("No user is looged In", 401));
     }
